@@ -38,7 +38,11 @@ let package = Package(
             resources: [.process("Localizable.xcstrings")]
         ),
         .target(name: "PalNavigation"),
-        .target(name: "PalDesignSystem", dependencies: ["PalCore", "PalPresentation"]),
+        .target(
+            name: "PalDesignSystem",
+            dependencies: ["PalCore", "PalPresentation"],
+            resources: [.process("Localizable.xcstrings")]
+        ),
         .target(name: "PalAnalytics", dependencies: ["PalCore"]),
         .target(name: "PalFeatureFlags", dependencies: ["PalCore"]),
         .target(name: "PalDebugKit", dependencies: ["PalCore", "PalNetworking", "PalPersistence"]),
