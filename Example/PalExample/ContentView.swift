@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  mvvm-foundation
+//  PalExample
 //
 //  Created by Mesrine on 30/5/26.
 //

@@ -60,3 +60,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Swift Package Manager (Xcode-generated)
+.swiftpm/
+
+# Agent instruction files are part of this repo (override any global ignore)
+!CLAUDE.md
+!AGENTS.md

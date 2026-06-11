@@ -1,6 +1,6 @@
 //
-//  mvvm_foundationApp.swift
-//  mvvm-foundation
+//  PalExampleApp.swift
+//  PalExample
 //
 //  Created by Mesrine on 30/5/26.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct mvvm_foundationApp: App {
+struct PalExampleApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
