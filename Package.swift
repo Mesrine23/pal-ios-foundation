@@ -21,8 +21,15 @@ let package = Package(
         .library(name: "PalDebugKit", targets: ["PalDebugKit"]),
     ],
     targets: [
-        .target(name: "PalCore"),
-        .target(name: "PalPersistence", dependencies: ["PalCore"]),
+        .target(
+            name: "PalCore",
+            resources: [.copy("PrivacyInfo.xcprivacy")]
+        ),
+        .target(
+            name: "PalPersistence",
+            dependencies: ["PalCore"],
+            resources: [.copy("PrivacyInfo.xcprivacy")]
+        ),
         .target(name: "PalNetworking", dependencies: ["PalCore"]),
         .target(name: "PalAuth", dependencies: ["PalNetworking", "PalPersistence"]),
         .target(name: "PalPresentation", dependencies: ["PalCore"]),
@@ -31,6 +38,10 @@ let package = Package(
         .target(name: "PalAnalytics", dependencies: ["PalCore"]),
         .target(name: "PalFeatureFlags", dependencies: ["PalCore"]),
         .target(name: "PalDebugKit", dependencies: ["PalCore", "PalNetworking", "PalPersistence"]),
+        .testTarget(
+            name: "PalPersistenceTests",
+            dependencies: ["PalPersistence"]
+        ),
         .testTarget(
             name: "PalSmokeTests",
             dependencies: [

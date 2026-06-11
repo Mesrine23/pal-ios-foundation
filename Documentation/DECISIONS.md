@@ -190,7 +190,15 @@ Rules:
 **Pre-app#1:** pagination pattern design · image strategy confirmation per app.
 **Pre-1.0:** LICENSE choice (before public flip) · public API & versioning/deprecation policy · DocC catalog consideration · broad test coverage + `PalTestSupport`.
 
-## 21. Implementation phases
+## 21. Deviations log
+
+> **Rule (owner directive):** whenever implementation reality conflicts with this canon, STOP, surface the conflict to the owner, and record the resolution here. Canon text stays authoritative; this log is the audit trail of approved exceptions.
+
+- **Phase 1 — macOS 14 platform floor added to `Package.swift`.** `swift build`/`swift test`/CI compile for the host Mac; without a declared floor SPM assumes macOS 10.13 and modern APIs (os.Logger, Duration, Observation) fail. Products remain iOS-targeted; macOS is build-infrastructure only; UIKit-only surfaces get `#if canImport(UIKit)`. Approved by owner.
+- **Phase 1 — `AppInfo` distribution detection (TestFlight/App Store) deferred.** The modern API (`AppTransaction`) requires StoreKit, breaching Core's Foundation-only rule; the receipt heuristic is deprecated in iOS 18. Ship nothing rather than either cost; `distribution() async` is purely additive later, placed where the first consumer lives (likely DebugKit). Approved by owner.
+- **Phase 2 — privacy manifest added to PalCore as well** (canon mentioned only PalPersistence): `AppLanguage` writes `AppleLanguages` via UserDefaults — a required-reason API (CA92.1) — so PalCore must also declare it.
+
+## 22. Implementation phases
 
 Each phase ends GREEN: `swift build` + `swift test` pass and the Example app compiles.
 

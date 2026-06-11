@@ -30,4 +30,4 @@ Add the package in Xcode (*File ▸ Add Package Dependencies…*), pin to a vers
 swift build && swift test
 ```
 
-The `Example/` app consumes the package via a local path and dogfoods every product. Status: scaffold complete (Phase 0); packages land in phases — see [DECISIONS.md §21](Documentation/DECISIONS.md).
+The `Example/` app consumes the package via a local path and dogfoods every product. Status: scaffold complete (Phase 0); packages land in phases — see [DECISIONS.md §22](Documentation/DECISIONS.md).

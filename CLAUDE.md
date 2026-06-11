@@ -55,4 +55,4 @@ Every screen: `@MainActor @Observable` ViewModel holding `ViewState<Value>` (`id
 
 ## Current status
 
-Phase 0 (scaffold) — see DECISIONS.md §21 for the phase list. Targets contain empty stubs until their phase lands. Tests: smoke test now; targeted tests arrive with Phases 2–3.
+Phase 0 (scaffold) — see DECISIONS.md §22 for the phase list. Targets contain empty stubs until their phase lands. Tests: smoke test now; targeted tests arrive with Phases 2–3.
