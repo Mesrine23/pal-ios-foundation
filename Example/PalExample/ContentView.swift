@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PalCore
 
 struct ContentView: View {
     var body: some View {
