@@ -20,7 +20,7 @@ Every change must leave `swift build` + `swift test` green and the Example app c
 
 ## Package dependency DAG (enforced — never add edges)
 
-`PalCore→∅` · `PalPersistence→Core` · `PalNetworking→Core` · `PalAuth→Networking,Persistence` · `PalPresentation→Core` · `PalNavigation→∅` · `PalDesignSystem→Core,Presentation` · `PalAnalytics→Core` · `PalFeatureFlags→Core` · `PalDebugKit→Core,Networking,Persistence` (not DesignSystem).
+`PalCore→∅` · `PalPersistence→Core` · `PalNetworking→Core` · `PalAuth→Core,Networking,Persistence` · `PalPresentation→Core` · `PalNavigation→∅` · `PalDesignSystem→Core,Presentation` · `PalAnalytics→Core` · `PalFeatureFlags→Core` · `PalDebugKit→Core,Networking,Persistence` (not DesignSystem).
 
 Every target declares ALL modules it directly imports (no transitive reliance). No SwiftUI in PalCore. Zero external dependencies in the package — Swinject exists only app-side (Example).
 

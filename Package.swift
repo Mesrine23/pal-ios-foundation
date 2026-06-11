@@ -31,7 +31,7 @@ let package = Package(
             resources: [.copy("PrivacyInfo.xcprivacy")]
         ),
         .target(name: "PalNetworking", dependencies: ["PalCore"]),
-        .target(name: "PalAuth", dependencies: ["PalNetworking", "PalPersistence"]),
+        .target(name: "PalAuth", dependencies: ["PalCore", "PalNetworking", "PalPersistence"]),
         .target(name: "PalPresentation", dependencies: ["PalCore"]),
         .target(name: "PalNavigation"),
         .target(name: "PalDesignSystem", dependencies: ["PalCore", "PalPresentation"]),

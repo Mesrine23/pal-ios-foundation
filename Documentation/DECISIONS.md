@@ -32,7 +32,7 @@ Products and their **only allowed** dependencies (downward only, enforced in `Pa
 | `PalCore` | — |
 | `PalPersistence` | Core |
 | `PalNetworking` | Core |
-| `PalAuth` | Networking, Persistence |
+| `PalAuth` | Core, Networking, Persistence |
 | `PalPresentation` | Core |
 | `PalNavigation` | — (add Core only if genuinely needed) |
 | `PalDesignSystem` | Core, Presentation |
