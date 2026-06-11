@@ -43,6 +43,10 @@ let package = Package(
             dependencies: ["PalPersistence"]
         ),
         .testTarget(
+            name: "PalNetworkingTests",
+            dependencies: ["PalNetworking"]
+        ),
+        .testTarget(
             name: "PalSmokeTests",
             dependencies: [
                 "PalCore", "PalPersistence", "PalNetworking", "PalAuth", "PalPresentation",
