@@ -44,4 +44,4 @@ The `Example/` app is a runnable showcase — it consumes the package via a loca
 
 ## License
 
-Private during pre-1.0. A license will be chosen before the repository is made public at `1.0.0`.
+Released under the [MIT License](LICENSE) — © 2026 Panagiotis Palamidas.

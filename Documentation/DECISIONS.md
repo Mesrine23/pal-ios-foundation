@@ -21,7 +21,8 @@
 | Deployment floor | **iOS 17** for the package (Example app may target latest) |
 | External dependencies | **ZERO.** Swinject appears only app-side (Example app + docs snippets) |
 | Versioning | `v0.1.0` at first green scaffold → bump per package landed → `1.0.0` when the first real app ships. Early apps may track `main` |
-| Repo visibility | Private until `1.0.0`, then public |
+| Repo visibility | Public (open for feedback pre-1.0) |
+| License | **MIT** |
 | CI | GitHub Actions: `swift build && swift test` on push/PR (macOS runner) |
 
 ## 3. Package map & dependency DAG
@@ -189,7 +190,7 @@ Rules:
 ## 20. Checklists
 
 **Pre-app#1:** pagination pattern design · image strategy confirmation per app.
-**Pre-1.0:** LICENSE choice (before public flip) · public API & versioning/deprecation policy · DocC catalog consideration · broad test coverage + `PalTestSupport`.
+**Pre-1.0:** public API & versioning/deprecation policy · DocC catalog consideration · broad test coverage + `PalTestSupport`. *(LICENSE chosen: MIT.)*
 
 ## 21. Implementation status & deviations log
 
