@@ -53,6 +53,12 @@ Every target declares ALL modules it directly imports (no transitive reliance). 
 
 Every screen: `@MainActor @Observable` ViewModel holding one or more `Loader<Value>` (each drives a `ViewState`: `idle / loading(previous:) / loaded / failed(error, previous:)`); call `loader.load { }` (auto-cancels the previous in-flight load, swallows cancellation, maps to `PresentableError`); the View switches on `viewModel.‹loader›.state`. Navigation goes through the screen's `NavigationDelegate`, implemented by the feature coordinator as one-liners over the typed `Router`. Dependencies arrive via `init` (constructor injection from the app-side factory). Load failures → `ViewState`; action failures → `.appAlert`.
 
-## Current status
+## Documentation map
 
-Phases 0–8 implemented (tags `v0.1.0`→`v0.10.0`): Core · Persistence · Networking · Auth · Presentation · Navigation · DesignSystem · Analytics · FeatureFlags. **PalDebugKit (Phase 9) is the only unbuilt product** (empty stub). Tests: smoke + MemoryCache + TokenProvider + interceptor-chain + Router + Loader. Full phase status: DECISIONS.md §22.
+- [Getting Started](Documentation/GettingStarted.md) — install → composition root → first feature.
+- [Architecture](Documentation/ARCHITECTURE.md) — layers, the DAG, patterns, adoption notes.
+- [Per-product guides](Documentation/Products/) — the API and usage of each product.
+- [DECISIONS](Documentation/DECISIONS.md) — the design and its rationale (a living document, open to discussion).
+- [CONTRIBUTING](CONTRIBUTING.md) — build/verify, **implementation status & phase log**, and the deviations log.
+
+**Status lives in CONTRIBUTING** (single source — do not restate it here, so it can't go stale). At a glance: 9 of 10 products shipped; PalDebugKit is the next phase. **When you change an API, a decision, or a product's behavior, update the affected docs in the same change.**

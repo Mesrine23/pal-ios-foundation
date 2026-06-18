@@ -1,33 +1,47 @@
 # Pal
 
-A reusable, zero-dependency iOS foundation — one Swift Package, multiple focused products — built on Swift 6 strict concurrency, iOS 17+, MVVM + Coordinators, and Clean layering.
+A reusable, **zero-dependency** iOS foundation — one Swift Package, multiple focused products — built on **Swift 6** strict concurrency, **iOS 17+**, **MVVM + Coordinators**, and **Clean** layering (Presentation / Domain / Data).
 
-| Product | What it gives you |
-|---|---|
-| `PalCore` | Logging (os.Logger), curated extensions, async utilities, AppInfo, AppLanguage |
-| `PalPersistence` | Keychain & UserDefaults services with typed keys, in-memory TTL cache |
-| `PalNetworking` | Typed `Request<Response>` client, interceptor pipeline, single-flight auth refresh |
-| `PalAuth` | Keychain-backed token store glue |
-| `PalPresentation` | `ViewState`, `PresentableError`, the loadable ViewModel runner |
-| `PalNavigation` | Typed routes, `Router`, `RouterView`, deep links, flow modals |
-| `PalDesignSystem` | Opt-in theming, text styles, state views, alerts (en + el) |
-| `PalAnalytics` / `PalFeatureFlags` | Provider-agnostic seams with ready no-op/console/in-memory impls |
-| `PalDebugKit` | Shake-to-debug menu: network logs, environment switcher, response mocking |
+> **The law of the codebase:** the foundation ships **mechanisms**; apps ship **values**. Concrete endpoints, user-facing strings, brand tokens, storage keys, analytics events, environments, and validation rules never live in Pal — apps supply them via typed keys, static factories, and protocol conformances.
 
-## Usage
+## Products
 
-Add the package in Xcode (*File ▸ Add Package Dependencies…*), pin to a version, and import the products you need. A full **Getting Started** guide (app shell + composition root) ships with the Example app.
+| Product | What it gives you | Guide |
+|---|---|---|
+| `PalCore` | Logging, curated extensions, async utilities, `AppInfo`, `AppLanguage` | [→](Documentation/Products/PalCore.md) |
+| `PalPersistence` | Keychain & UserDefaults services with typed keys, in-memory TTL cache | [→](Documentation/Products/PalPersistence.md) |
+| `PalNetworking` | Typed `Request<Response>` client, interceptor pipeline, single-flight auth refresh | [→](Documentation/Products/PalNetworking.md) |
+| `PalAuth` | Keychain-backed token-store glue | [→](Documentation/Products/PalAuth.md) |
+| `PalPresentation` | `ViewState`, `PresentableError`, the `Loader` runner | [→](Documentation/Products/PalPresentation.md) |
+| `PalNavigation` | Typed routes, `Router`, `RouterView`, deep links, flow modals | [→](Documentation/Products/PalNavigation.md) |
+| `PalDesignSystem` | Opt-in theming, text styles, state views, alerts (en + el) | [→](Documentation/Products/PalDesignSystem.md) |
+| `PalAnalytics` | Provider-agnostic analytics seam + no-op/console/composite | [→](Documentation/Products/PalAnalytics.md) |
+| `PalFeatureFlags` | Synchronous feature-flag seam + in-memory/no-op | [→](Documentation/Products/PalFeatureFlags.md) |
+| `PalDebugKit` | Shake-to-debug: network logs, environment switcher, mocks *(landing next)* | [→](Documentation/Products/PalDebugKit.md) |
+
+## Install
+
+In Xcode: **File ▸ Add Package Dependencies…**, paste the repo URL, pin a version, and import the products you need. Full walkthrough — install → composition root → first feature — in **[Getting Started](Documentation/GettingStarted.md)**.
 
 ## Documentation
 
-- [Engineering decisions (canon)](Documentation/DECISIONS.md)
-- [Architecture & patterns](Documentation/ARCHITECTURE.md)
-- Agent guides: [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md)
+The docs serve both the engineers adopting Pal and the agents working in it. Pal is built to be scalable and maintainable, so its design is **open to discussion** — the decisions below are proposals to improve on, not dogma.
 
-## Development
+- **[Getting Started](Documentation/GettingStarted.md)** — from zero to a running feature.
+- **[Architecture](Documentation/ARCHITECTURE.md)** — layers, the dependency DAG, patterns, adoption notes.
+- **[Per-product guides](Documentation/Products/)** — the API and usage of each product.
+- **[Design decisions](Documentation/DECISIONS.md)** — why Pal is shaped the way it is.
+- **[Contributing](CONTRIBUTING.md)** — build/verify, implementation status, the binding rules, deviations log.
+- Agent working guides: [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md).
+
+## Develop
 
 ```bash
 swift build && swift test
 ```
 
-The `Example/` app consumes the package via a local path and dogfoods every product. Status: scaffold complete (Phase 0); packages land in phases — see [DECISIONS.md §22](Documentation/DECISIONS.md).
+The `Example/` app consumes the package via a local path and dogfoods the products. **Status:** 9 of 10 products are shipped; `PalDebugKit` is the next build phase — see [CONTRIBUTING](CONTRIBUTING.md) for the phase log.
+
+## License
+
+Private during pre-1.0. A license will be chosen before the repository is made public at `1.0.0`.

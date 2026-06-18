@@ -1,8 +1,9 @@
-# Pal — Engineering Decisions (Consolidated Spec)
+# Pal — Engineering Decisions
 
-> The single source of truth for every locked decision in the Pal foundation.
-> Decisions only — no negotiation history. The historical planning document is archived outside the repo.
-> If code or docs contradict this file, this file wins; change it only with the owner's explicit approval.
+> **Why Pal is shaped the way it is** — the architectural decisions behind the foundation, for the engineers and agents who build on it and contribute to it.
+> A **living document, open to discussion.** Pal is built to be scalable and maintainable, so these decisions are proposals to improve on, not dogma — propose changes rather than drifting silently. If code or docs contradict this file, treat this file as the intended design and reconcile by raising a change.
+>
+> New here? Start with **[Getting Started](GettingStarted.md)**, browse the **[per-product guides](Products/)**, and read **[Architecture](ARCHITECTURE.md)** for structure. Implementation status and the deviations log live in **[CONTRIBUTING](../CONTRIBUTING.md)**.
 
 ## 1. Identity & goals
 
@@ -96,7 +97,7 @@ Rules:
 
 - `LoggerFactory.make(category:)` → `os.Logger` (subsystem = main bundle id). Logging is **opt-in**; no protocol abstraction.
 - Curated Foundation-only extensions: String (`isBlank`, `nilIfEmpty`, `trimmed`, `isNumber` — **no `isValidEmail`**: validation rules are app values) · Collection (`subscript(safe:)`, `isNotEmpty`) · Array (`removingDuplicates()` order-preserving, `appendSafe`) · Date (`Date(iso8601:)`, `isSameDay(as:)`, thin `FormatStyle` conveniences) · Double (`rounded(to:)`) · Optional (`orEmpty` for String?/Collection?). Extensions grow organically via dogfooding.
-- Async utilities: `Debouncer` (Task-based) · `withTimeout(seconds:operation:)`.
+- Async utilities: `Debouncer` (Task-based) · `withTimeout(_:operation:)` (races a `Duration` deadline; throws `TimeoutError`).
 - `AppInfo`: version, build, bundleId, environment detection — API shaped so TestFlight detection can go async (`AppTransaction`) without breaking changes.
 - `AppLanguage`: available/current languages from bundle, `AppleLanguages` override, `requiresRestart` flag. No bundle swizzling.
 
@@ -190,30 +191,8 @@ Rules:
 **Pre-app#1:** pagination pattern design · image strategy confirmation per app.
 **Pre-1.0:** LICENSE choice (before public flip) · public API & versioning/deprecation policy · DocC catalog consideration · broad test coverage + `PalTestSupport`.
 
-## 21. Deviations log
+## 21. Implementation status & deviations log
 
-> **Rule (owner directive):** whenever implementation reality conflicts with this canon, STOP, surface the conflict to the owner, and record the resolution here. Canon text stays authoritative; this log is the audit trail of approved exceptions.
+Phase-by-phase status and the audit trail of approved deviations from this design are contributor-facing, not part of the design reference — they live in **[CONTRIBUTING](../CONTRIBUTING.md)**.
 
-- **Phase 1 — macOS 14 platform floor added to `Package.swift`.** `swift build`/`swift test`/CI compile for the host Mac; without a declared floor SPM assumes macOS 10.13 and modern APIs (os.Logger, Duration, Observation) fail. Products remain iOS-targeted; macOS is build-infrastructure only; UIKit-only surfaces get `#if canImport(UIKit)`. Approved by owner.
-- **Phase 1 — `AppInfo` distribution detection (TestFlight/App Store) deferred.** The modern API (`AppTransaction`) requires StoreKit, breaching Core's Foundation-only rule; the receipt heuristic is deprecated in iOS 18. Ship nothing rather than either cost; `distribution() async` is purely additive later, placed where the first consumer lives (likely DebugKit). Approved by owner.
-- **Phase 2 — privacy manifest added to PalCore as well** (canon mentioned only PalPersistence): `AppLanguage` writes `AppleLanguages` via UserDefaults — a required-reason API (CA92.1) — so PalCore must also declare it.
-- **Polish pass (post-POC) — status docs were stale.** `CLAUDE.md` "Current status" and `§22` ticks still read "Phase 0 / empty stubs" at `v0.9.0` — caught by the TheLoot adoption agent. Fixed. **Process rule: update status docs every phase.**
-- **Polish pass — runner redesigned `LoadableViewModelProtocol` → `Loader<Value>`.** The protocol+extension couldn't keep `state` `private(set)` against a `{get set}` requirement (its canonical example didn't compile) and supported only one loadable state per VM. Replaced by an owned `Loader<Value>` object: encapsulated `private(set)` state, no `loadTask` boilerplate, multiple sections per screen. **Breaking API change (pre-1.0, acceptable).** A compile-tested reference example (`PalPresentationTests`) now guards the canonical pattern from silent rot. Approved by owner.
-- **Polish pass — PalDesignSystem `Theme` extended + reframed.** Added a shadow/elevation scale (`ThemeShadows` + `.shadow(_ token:)`), a `separator` color, and `tracking`/`lineSpacing` on `TextStyleToken`; softened the custom-font "MUST `relativeTo:`" to allow fixed sizes; documented `Theme` as a deliberate minimal bridge. From the POC's design-system friction. Approved by owner.
-
-## 22. Implementation phases
-
-Each phase ends GREEN: `swift build` + `swift test` pass and the Example app compiles.
-
-- **0 Scaffold** ✅ `v0.1.0` — spec, repo restructure (template → `Example/`), `Package.swift` (zero deps, DAG), agent docs, CI.
-- **1 PalCore** ✅ `v0.2.0` — LoggerFactory · extensions · Debouncer/withTimeout · AppInfo · AppLanguage.
-- **2 PalPersistence** ✅ `v0.3.0` — KeychainService · UserDefaultsService · typed keys · MemoryCache (TTL tests) · privacy manifest.
-- **3 PalNetworking** ✅ `v0.4.0` — Request/TransportRequest · NetworkError · HTTPClient · onion + Logging/Retry/Auth · TokenProvider + AuthEvent · Data/String · multipart/file upload (single-flight + chain tests).
-- **4 PalAuth** ✅ `v0.5.0` — KeychainTokenStore.
-- **5 PalPresentation** ✅ `v0.6.0` (runner reworked `v0.10.0`) — ViewState · PresentableError · **`Loader<Value>`** (+ `performLoad` async) · en+el strings · Loader tests.
-- **6 PalNavigation** ✅ `v0.7.0` — Routable · Router (strategy API, Identifiable modals) · RouterView (nested modals) · DeepLinkHandler · dismiss-then-present test.
-- **7 PalDesignSystem** ✅ `v0.8.0` (extended `v0.10.0`) — Theme (colors/typography/spacing/radii/**shadows**) + textStyle · ErrorView/SectionErrorView/EmptyStateView/LoadingView · appAlert (+ custom overload) · utilities · en+el · Dynamic Type.
-- **8 PalAnalytics + PalFeatureFlags** ✅ `v0.9.0` — protocols + NoOp/Console/Composite/InMemory.
-- **9 PalDebugKit** ⏭️ NEXT — NetworkLogStore + Inspector/Mock interceptors · overlay-window shake menu · Logs/API/Mocks via DebugModule. (Requires reintroducing the HTTPClient `baseURLProvider` for env switching — reverted earlier, see notes.)
-- **10 Example app** — composition root (manual DI + optional Swinject) · canonical-slice demo dogfooding every package · README "Getting Started". *(Also being validated externally via the TheLoot adoption POC.)*
-- **11 (deferred)** — broad tests + PalTestSupport · reachability · streaming download-to-disk.
+The standing rule: when implementation reality conflicts with this document, **stop, surface the conflict, and record the resolution** in CONTRIBUTING's deviations log. This document stays authoritative as the intended design.

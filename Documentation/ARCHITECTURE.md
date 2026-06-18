@@ -1,6 +1,6 @@
 # Pal — Architecture
 
-> How the foundation is structured and how apps build on it. Decisions and their rationale live in [DECISIONS.md](DECISIONS.md) — this document explains shape and patterns.
+> How the foundation is structured and how apps build on it — this document explains shape and patterns; the decisions and their rationale live in [DECISIONS.md](DECISIONS.md). To start building, see [Getting Started](GettingStarted.md); for each product's API, the [per-product guides](Products/).
 
 ## Layers
 
@@ -43,6 +43,8 @@ PalDebugKit (→ Core, Networking, Persistence)
 | `PalDesignSystem` | Opt-in Theme (system default), `.textStyle`, ErrorView/SectionErrorView/EmptyStateView/LoadingView, `.appAlert`, SwiftUI utilities, en+el catalogs |
 | `PalAnalytics` / `PalFeatureFlags` | Provider-agnostic seams + NoOp/Console/Composite/InMemory impls |
 | `PalDebugKit` | Shake debug menu (overlay window): network Logs, API environment switcher, Mocks — runtime-enabled, gated app-side by the `DEBUGKIT` flag |
+
+Each product has a usage guide in [Documentation/Products/](Products/).
 
 ## The canonical vertical slice
 
@@ -142,4 +144,4 @@ final class AppContainer {
 ## Workflows
 
 - **Live-edit Pal while building an app:** drag the local Pal checkout into the app's workspace (local override beats the remote pin) → edit live → commit/push/tag → remove override → bump the app's pin.
-- **Phases:** implementation proceeds per DECISIONS.md §22; every phase ends with `swift build` + `swift test` green and the Example app compiling.
+- **Phases:** implementation proceeds per the [phase log in CONTRIBUTING](../CONTRIBUTING.md); every phase ends with `swift build` + `swift test` green and the Example app compiling.
