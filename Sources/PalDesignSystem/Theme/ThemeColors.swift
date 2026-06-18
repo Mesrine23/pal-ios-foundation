@@ -27,6 +27,9 @@ public struct ThemeColors: Sendable {
     /// Errors and destructive actions.
     public var danger: Color
 
+    /// Hairline dividers and card borders.
+    public var separator: Color
+
     /// Creates a color set.
     public init(
         background: Color,
@@ -36,7 +39,8 @@ public struct ThemeColors: Sendable {
         accent: Color,
         success: Color,
         warning: Color,
-        danger: Color
+        danger: Color,
+        separator: Color = Color.gray.opacity(0.25)
     ) {
         self.background = background
         self.surface = surface
@@ -46,6 +50,7 @@ public struct ThemeColors: Sendable {
         self.success = success
         self.warning = warning
         self.danger = danger
+        self.separator = separator
     }
 
     /// System-native colors — adaptive light/dark with zero configuration.
@@ -59,7 +64,8 @@ public struct ThemeColors: Sendable {
             accent: .accentColor,
             success: .green,
             warning: .orange,
-            danger: .red
+            danger: .red,
+            separator: Color(uiColor: .separator)
         )
         #else
         ThemeColors(
@@ -70,7 +76,8 @@ public struct ThemeColors: Sendable {
             accent: .accentColor,
             success: .green,
             warning: .orange,
-            danger: .red
+            danger: .red,
+            separator: Color(nsColor: .separatorColor)
         )
         #endif
     }

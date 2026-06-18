@@ -79,9 +79,9 @@ Rules:
 - **Canonical vertical slice** (the reference pattern for every feature):
   - **Domain** (pure): entity (`User`) · repo protocol (`UsersRepoProtocol`) · use case (`FetchUsersUseCase: FetchUsersUseCaseProtocol`, single `execute`).
   - **Data** (Domain + PalNetworking): `UserDTO: Decodable` + `toDomain()` mapping · `Request` factories live HERE (return `Request<…DTO>`) · `UsersRepository` calls `NetworkClient.send`, maps DTO→entity.
-  - **Presentation** (Domain only): `@MainActor @Observable` ViewModel holding `ViewState<…>`; SwiftUI View switches on state.
+  - **Presentation** (Domain only): `@MainActor @Observable` ViewModel holding one or more `Loader<…>` (each drives a `ViewState`); SwiftUI View switches on `viewModel.‹loader›.state`.
   - **Composition root** (app shell): wires client → repo → use case → ViewModel.
-- **Multi-call screens:** a composing use case returns a composite content model; parallel via `async let`, sequential `await` where data-dependent; structured concurrency auto-cancels siblings on failure. ViewModel stays a one-line `load {}`.
+- **Multi-call screens:** a composing use case returns a composite content model; parallel via `async let`, sequential `await` where data-dependent; structured concurrency auto-cancels siblings on failure. ViewModel stays a one-line `loader.load {}`.
 - **Partial-failure screens:** composite model fields typed `Result<Value, PresentableError>`; the use case wraps optional topics; View renders per-topic content or an inline `SectionErrorView`. Critical call still throws → whole screen fails. Default retry re-runs the whole composition.
 
 ## 7. DI & composition (app-side pattern — NOT in the foundation)
@@ -128,7 +128,7 @@ Rules:
 
 - `ViewState<Value: Sendable>`: `idle` · `loading(previous: Value?)` · `loaded(Value)` · `failed(PresentableError, previous: Value?)`. Previous value keeps content on screen during refresh/failed-refresh.
 - `PresentableError`: `title`, `message`, `isRetryable`; domain errors map via one small protocol; localized default strings ship in-package (en + el).
-- `LoadableViewModelProtocol` (`@MainActor`): requirements `state` + `loadTask`; extension provides the runner `load {}` — cancels previous task (re-trigger dedupe), sets `.loading(previous:)`, maps errors, **swallows `CancellationError`**, `[weak self]`. Also: an **async `load` variant** for `.task {}` integration (view-lifecycle cancellation), `cancelLoad()` for manual cases. The runner owns re-trigger cancellation; `.task` owns lifecycle cancellation. Hand-writing remains the escape hatch (e.g. two independent loadable sections).
+- `Loader<Value: Sendable>` (`@MainActor @Observable`): the per-content runner a ViewModel **holds** — one per independently-loadable section. `state` is `private(set)` (only the loader mutates it). `load { }` — cancels the previous in-flight load (re-trigger dedupe), sets `.loading(previous:)`, maps errors to `PresentableError`, **swallows `CancellationError`**, `[weak self]`; `performLoad { } async` for `.task {}` (view-lifecycle cancellation); `cancel()`. The runner owns re-trigger cancellation; `.task` owns lifecycle cancellation. Multiple loaders per VM cover multi-section / partial-failure screens. *(Replaced the earlier `LoadableViewModelProtocol`, whose `{get set}` requirement couldn't keep `state` `private(set)` and allowed only one state per VM — see deviations log.)*
 - Channel split: LOAD failures → `ViewState` · ACTION failures (screen keeps data) → `AppAlert` (DesignSystem).
 
 ## 13. PalNavigation
@@ -143,8 +143,8 @@ Rules:
 
 ## 14. PalDesignSystem
 
-- **Theme is OPT-IN:** `@Environment(\.theme)` defaults to `Theme.system` (system colors/SF fonts/standard spacing). Branding = one line `.theme(MyBrandTheme)`. Slots: colors (semantic), typography, spacing, radii. `ThemeTypography` styles defined `relativeTo:` base text styles (Dynamic Type scaling).
-- `.textStyle(_:)` Text extension reading theme tokens (apply LAST — returns `some View`). Buttons: `ButtonStyle` conformance pattern; values app-defined. Raw SwiftUI styling always remains available.
+- **Theme is OPT-IN and a deliberate MINIMAL BRIDGE** — it carries only the slots Pal's own components need; apps with a rich design system keep their full token layer and map a subset in. `@Environment(\.theme)` defaults to `Theme.system`; branding = one line `.theme(MyBrandTheme)`. Slots: colors (semantic, incl. `separator`), typography, spacing, radii, **shadows (elevation `level1`/`level2`, applied via `.shadow(_ token:)`)**. `ThemeTypography`: prefer `relativeTo:` for Dynamic Type; a fixed `.custom(_:size:)` is allowed when the brand needs pixel-fixed sizing.
+- `.textStyle(_:)` reading theme tokens (apply LAST — returns `some View`). `TextStyleToken` carries font, optional color, and optional **`tracking` (letter spacing) + `lineSpacing`**; apps extend with their own tokens. Buttons: `ButtonStyle` conformance pattern; values app-defined. Raw SwiftUI styling always remains available.
 - Components v1: `ErrorView` (full-screen `PresentableError` + Retry) · `SectionErrorView` (inline per-topic failure) · `EmptyStateView` · `LoadingView`. Accessibility labels on actions required. **No `StateView`** — screens keep the `ViewState` switch explicit (revisit only if dogfooding hurts).
 - `.appAlert($alert)`: `AppAlert { kind: .info/.success/.warning/.error, title, message, primary, secondary? }`; app declares case alerts via static factories; `.error(PresentableError)` bridge built in. Custom-content overload `.appAlert($item) { CustomContent }` — foundation owns the chrome. **Known limitation:** a root-level overlay does not render above an active `.sheet` — apply per presentation context. Toast: not v1.
 - Generic SwiftUI utilities (`hideKeyboard`, `onFirstAppear`, …) live here, not in Core.
@@ -197,20 +197,23 @@ Rules:
 - **Phase 1 — macOS 14 platform floor added to `Package.swift`.** `swift build`/`swift test`/CI compile for the host Mac; without a declared floor SPM assumes macOS 10.13 and modern APIs (os.Logger, Duration, Observation) fail. Products remain iOS-targeted; macOS is build-infrastructure only; UIKit-only surfaces get `#if canImport(UIKit)`. Approved by owner.
 - **Phase 1 — `AppInfo` distribution detection (TestFlight/App Store) deferred.** The modern API (`AppTransaction`) requires StoreKit, breaching Core's Foundation-only rule; the receipt heuristic is deprecated in iOS 18. Ship nothing rather than either cost; `distribution() async` is purely additive later, placed where the first consumer lives (likely DebugKit). Approved by owner.
 - **Phase 2 — privacy manifest added to PalCore as well** (canon mentioned only PalPersistence): `AppLanguage` writes `AppleLanguages` via UserDefaults — a required-reason API (CA92.1) — so PalCore must also declare it.
+- **Polish pass (post-POC) — status docs were stale.** `CLAUDE.md` "Current status" and `§22` ticks still read "Phase 0 / empty stubs" at `v0.9.0` — caught by the TheLoot adoption agent. Fixed. **Process rule: update status docs every phase.**
+- **Polish pass — runner redesigned `LoadableViewModelProtocol` → `Loader<Value>`.** The protocol+extension couldn't keep `state` `private(set)` against a `{get set}` requirement (its canonical example didn't compile) and supported only one loadable state per VM. Replaced by an owned `Loader<Value>` object: encapsulated `private(set)` state, no `loadTask` boilerplate, multiple sections per screen. **Breaking API change (pre-1.0, acceptable).** A compile-tested reference example (`PalPresentationTests`) now guards the canonical pattern from silent rot. Approved by owner.
+- **Polish pass — PalDesignSystem `Theme` extended + reframed.** Added a shadow/elevation scale (`ThemeShadows` + `.shadow(_ token:)`), a `separator` color, and `tracking`/`lineSpacing` on `TextStyleToken`; softened the custom-font "MUST `relativeTo:`" to allow fixed sizes; documented `Theme` as a deliberate minimal bridge. From the POC's design-system friction. Approved by owner.
 
 ## 22. Implementation phases
 
 Each phase ends GREEN: `swift build` + `swift test` pass and the Example app compiles.
 
-- **0 Scaffold** — this spec, repo restructure (template → `Example/`), `Package.swift` (zero deps, DAG), agent docs, CI, tag `v0.1.0`. ✅ in progress
-- **1 PalCore** — LoggerFactory · extensions · Debouncer/withTimeout · AppInfo · AppLanguage.
-- **2 PalPersistence** — KeychainService · UserDefaultsService · typed keys · MemoryCache · privacy manifest · **tests: MemoryCache TTL**.
-- **3 PalNetworking** — Request/TransportRequest · NetworkError · HTTPClient · onion + Logging/Retry/Auth interceptors · TokenProvider + AuthEvent · Data/String responses · multipart/file upload · **tests: TokenProvider single-flight, interceptor chain**.
-- **4 PalAuth** — KeychainTokenStore.
-- **5 PalPresentation** — ViewState · PresentableError · LoadableViewModelProtocol + runner (+ async variant) · en+el strings.
-- **6 PalNavigation** — Routable · Router (strategy API, Identifiable modals) · RouterView (nested modals) · DeepLinkHandler. Test scenario: dismiss-then-present.
-- **7 PalDesignSystem** — Theme + textStyle · ErrorView/SectionErrorView/EmptyStateView/LoadingView · appAlert (+ custom overload) · utilities · en+el catalogs · Dynamic Type.
-- **8 PalAnalytics + PalFeatureFlags** — protocols + NoOp/Console/Composite/InMemory.
-- **9 PalDebugKit** — NetworkLogStore + Inspector/Mock interceptors · overlay-window shake menu · Logs/API/Mocks via DebugModule · en+el.
-- **10 Example app** — Swinject composition root, canonical-slice demo screens dogfooding every package, README "Getting Started".
+- **0 Scaffold** ✅ `v0.1.0` — spec, repo restructure (template → `Example/`), `Package.swift` (zero deps, DAG), agent docs, CI.
+- **1 PalCore** ✅ `v0.2.0` — LoggerFactory · extensions · Debouncer/withTimeout · AppInfo · AppLanguage.
+- **2 PalPersistence** ✅ `v0.3.0` — KeychainService · UserDefaultsService · typed keys · MemoryCache (TTL tests) · privacy manifest.
+- **3 PalNetworking** ✅ `v0.4.0` — Request/TransportRequest · NetworkError · HTTPClient · onion + Logging/Retry/Auth · TokenProvider + AuthEvent · Data/String · multipart/file upload (single-flight + chain tests).
+- **4 PalAuth** ✅ `v0.5.0` — KeychainTokenStore.
+- **5 PalPresentation** ✅ `v0.6.0` (runner reworked `v0.10.0`) — ViewState · PresentableError · **`Loader<Value>`** (+ `performLoad` async) · en+el strings · Loader tests.
+- **6 PalNavigation** ✅ `v0.7.0` — Routable · Router (strategy API, Identifiable modals) · RouterView (nested modals) · DeepLinkHandler · dismiss-then-present test.
+- **7 PalDesignSystem** ✅ `v0.8.0` (extended `v0.10.0`) — Theme (colors/typography/spacing/radii/**shadows**) + textStyle · ErrorView/SectionErrorView/EmptyStateView/LoadingView · appAlert (+ custom overload) · utilities · en+el · Dynamic Type.
+- **8 PalAnalytics + PalFeatureFlags** ✅ `v0.9.0` — protocols + NoOp/Console/Composite/InMemory.
+- **9 PalDebugKit** ⏭️ NEXT — NetworkLogStore + Inspector/Mock interceptors · overlay-window shake menu · Logs/API/Mocks via DebugModule. (Requires reintroducing the HTTPClient `baseURLProvider` for env switching — reverted earlier, see notes.)
+- **10 Example app** — composition root (manual DI + optional Swinject) · canonical-slice demo dogfooding every package · README "Getting Started". *(Also being validated externally via the TheLoot adoption POC.)*
 - **11 (deferred)** — broad tests + PalTestSupport · reachability · streaming download-to-disk.

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The theme's type scale. Custom fonts MUST be created with
-/// `Font.custom(_:size:relativeTo:)` so Dynamic Type keeps scaling them.
+/// The theme's type scale. Prefer `Font.custom(_:size:relativeTo:)` so Dynamic
+/// Type keeps scaling custom fonts; use a fixed `Font.custom(_:size:)` only when
+/// the brand requires pixel-fixed sizing (it will not scale with Dynamic Type).
 public struct ThemeTypography: Sendable {
 
     /// Hero/screen titles.

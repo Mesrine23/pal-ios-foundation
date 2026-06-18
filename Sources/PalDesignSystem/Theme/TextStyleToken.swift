@@ -7,7 +7,9 @@ import SwiftUI
 /// extension TextStyleToken {
 ///     static let priceTag = TextStyleToken(
 ///         font: { $0.typography.headline },
-///         color: { $0.colors.accent }
+///         color: { $0.colors.accent },
+///         tracking: 0.5,
+///         lineSpacing: 2
 ///     )
 /// }
 /// ```
@@ -15,17 +17,25 @@ public struct TextStyleToken: Sendable {
 
     let font: @Sendable (Theme) -> Font
     let color: (@Sendable (Theme) -> Color)?
+    let tracking: CGFloat?
+    let lineSpacing: CGFloat?
 
     /// Creates a text style token.
     /// - Parameters:
     ///   - font: Resolves the token's font from the theme.
     ///   - color: Resolves the token's color from the theme; `nil` inherits the context's color.
+    ///   - tracking: Letter spacing in points; `nil` leaves it unchanged.
+    ///   - lineSpacing: Additional line spacing in points; `nil` leaves it unchanged.
     public init(
         font: @escaping @Sendable (Theme) -> Font,
-        color: (@Sendable (Theme) -> Color)? = nil
+        color: (@Sendable (Theme) -> Color)? = nil,
+        tracking: CGFloat? = nil,
+        lineSpacing: CGFloat? = nil
     ) {
         self.font = font
         self.color = color
+        self.tracking = tracking
+        self.lineSpacing = lineSpacing
     }
 
     /// Hero/screen titles in primary text color.

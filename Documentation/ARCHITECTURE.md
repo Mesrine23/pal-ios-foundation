@@ -38,7 +38,7 @@ PalDebugKit (→ Core, Networking, Persistence)
 | `PalPersistence` | KeychainService (throwing), UserDefaultsService, typed keys (`KeychainKey`/`DefaultsKey`), MemoryCache (actor, passive TTL, memory-only) |
 | `PalNetworking` | `Request<Response>`, `HTTPClient` (typed `throws(NetworkError)`), interceptor onion over `TransportRequest`, `TokenProvider` single-flight refresh actor |
 | `PalAuth` | `KeychainTokenStore` glue (TokenStore ⇄ KeychainService) |
-| `PalPresentation` | `ViewState<Value>`, `PresentableError`, `LoadableViewModelProtocol` + runner |
+| `PalPresentation` | `ViewState<Value>`, `PresentableError`, `Loader<Value>` (the owned per-section runner) |
 | `PalNavigation` | `Routable`, `Router<Route>`, `RouterView`, deep-link strategies, Identifiable modal items |
 | `PalDesignSystem` | Opt-in Theme (system default), `.textStyle`, ErrorView/SectionErrorView/EmptyStateView/LoadingView, `.appAlert`, SwiftUI utilities, en+el catalogs |
 | `PalAnalytics` / `PalFeatureFlags` | Provider-agnostic seams + NoOp/Console/Composite/InMemory impls |
@@ -83,9 +83,8 @@ struct UsersRepository: UsersRepoProtocol {
 }
 
 @MainActor @Observable
-final class UsersListViewModel: LoadableViewModelProtocol {
-    private(set) var state: ViewState<[User]> = .idle
-    var loadTask: Task<Void, Never>?
+final class UsersListViewModel {
+    let users = Loader<[User]>()             // one Loader per independently-loadable section
     private let fetchUsers: FetchUsersUseCaseProtocol
     private weak var delegate: UsersListNavigationDelegate?
 
@@ -94,18 +93,30 @@ final class UsersListViewModel: LoadableViewModelProtocol {
         self.delegate = delegate
     }
 
-    func refresh() { load { try await self.fetchUsers.execute() } }
+    func refresh() { users.load { try await self.fetchUsers.execute() } }
     func userTapped(_ user: User) { delegate?.showUserDetail(user) }
 }
+// View switches on `viewModel.users.state`.
 
-// COMPOSITION ROOT (app shell, @MainActor; Swinject demonstrated in Example/)
-// factory resolves use cases and constructor-injects the VM; factories are the
-// only code that touches the container; resolve(...)! is the sanctioned fail-fast.
+// COMPOSITION ROOT (app shell, @MainActor) — manual constructor injection:
+@MainActor
+final class AppContainer {
+    private let client: NetworkClient = HTTPClient(baseURL: AppConfig.baseURL)
+    private lazy var usersRepo: UsersRepoProtocol = UsersRepository(client: client)
+
+    func makeUsersListViewModel(delegate: UsersListNavigationDelegate?) -> UsersListViewModel {
+        UsersListViewModel(fetchUsers: FetchUsersUseCase(usersRepo: usersRepo), delegate: delegate)
+    }
+    // one factory method per feature; grows as the app grows
+}
+// Swinject is the alternative for larger apps (native Assembly/Assembler, single
+// root container) — factories resolve + constructor-inject and `resolve(...)!`
+// is the sanctioned fail-fast. The manual container above needs no DI framework.
 ```
 
 ## Key patterns
 
-**Multi-call screens** — a composing use case returns a composite model; `async let` for independent calls, plain `await` where data-dependent; one `load {}` in the VM.
+**Multi-call screens** — a composing use case returns a composite model; `async let` for independent calls, plain `await` where data-dependent; one `loader.load {}` in the VM (or one `Loader` per independent section).
 
 **Partial failure** — optional topics typed `Result<Value, PresentableError>` inside the composite; View renders content or `SectionErrorView` per topic; critical call still throws.
 
@@ -121,7 +132,14 @@ final class UsersListViewModel: LoadableViewModelProtocol {
 
 **DebugKit gating** — package code always compiles; activation is runtime + default-OFF. Apps define the `DEBUGKIT` compilation condition in the configurations that should carry tools and wrap `PalDebugTools.enable(…)` + Inspector/Mock wiring in `#if DEBUGKIT` at the composition root. SPM builds packages in release mode for any non-"Debug" app configuration — the package can never self-gate per configuration; this is why the flag lives in the app.
 
+## Adopting Pal in an existing app
+
+- **Repositories back onto any source — not just the network.** The repository is the only layer that touches storage; back it with `UserDefaultsService` / SwiftData / Core Data / a bundled file / in-memory. For a synchronous, non-failing local source the `ViewState` `loading`/`failed` cases are largely vestigial — still use a `Loader` for uniformity (its `load { }` closure is `async throws`, so wrap a sync call as `load { store.get(...) }`), or skip the loader and hold the value directly when a screen truly can't load or fail.
+- **Multi-target apps link Pal per target.** A Pal product linked to the *app* target is **not** visible to separate framework targets (`Domain.xcodeproj`, `Data.xcodeproj`, …). Each framework that imports a Pal product must link it directly — e.g. the Data framework links `PalPersistence`. (Domain links nothing — it stays pure Swift.)
+- **Existential domains can't be route payloads.** `Routable` requires `Hashable & Sendable`, so an `any SomeProtocol` existential can't ride a route. Model the domain as a concrete (sum) type, **or** carry an ID in the route and re-fetch in the destination (also the state-restoration-friendly variant).
+- **Swift 6 / Xcode 26 actor isolation.** Set Domain/Data targets to `nonisolated` default isolation and the app/Presentation target to `MainActor` (`SWIFT_DEFAULT_ACTOR_ISOLATION`). Otherwise entity/content types silently become main-actor-isolated and can't be constructed off-actor inside `Loader`'s `@Sendable` operation ("main actor-isolated … cannot be called from outside the actor"). Entity/content types must be `Sendable`.
+
 ## Workflows
 
 - **Live-edit Pal while building an app:** drag the local Pal checkout into the app's workspace (local override beats the remote pin) → edit live → commit/push/tag → remove override → bump the app's pin.
-- **Phases:** implementation proceeds per DECISIONS.md §21; every phase ends with `swift build` + `swift test` green and the Example app compiling.
+- **Phases:** implementation proceeds per DECISIONS.md §22; every phase ends with `swift build` + `swift test` green and the Example app compiling.

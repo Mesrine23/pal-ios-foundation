@@ -51,8 +51,8 @@ Every target declares ALL modules it directly imports (no transitive reliance). 
 
 ## The canonical per-screen pattern
 
-Every screen: `@MainActor @Observable` ViewModel holding `ViewState<Value>` (`idle / loading(previous:) / loaded / failed(error, previous:)`) + the `LoadableViewModelProtocol` runner (`load {}` — auto-cancels the previous in-flight load, swallows cancellation, maps to `PresentableError`) + a View that switches on state. Navigation goes through the screen's `NavigationDelegate`, implemented by the feature coordinator as one-liners over the typed `Router`. Dependencies arrive via `init` (constructor injection from the app-side factory). Load failures → `ViewState`; action failures → `.appAlert`.
+Every screen: `@MainActor @Observable` ViewModel holding one or more `Loader<Value>` (each drives a `ViewState`: `idle / loading(previous:) / loaded / failed(error, previous:)`); call `loader.load { }` (auto-cancels the previous in-flight load, swallows cancellation, maps to `PresentableError`); the View switches on `viewModel.‹loader›.state`. Navigation goes through the screen's `NavigationDelegate`, implemented by the feature coordinator as one-liners over the typed `Router`. Dependencies arrive via `init` (constructor injection from the app-side factory). Load failures → `ViewState`; action failures → `.appAlert`.
 
 ## Current status
 
-Phase 0 (scaffold) — see DECISIONS.md §22 for the phase list. Targets contain empty stubs until their phase lands. Tests: smoke test now; targeted tests arrive with Phases 2–3.
+Phases 0–8 implemented (tags `v0.1.0`→`v0.10.0`): Core · Persistence · Networking · Auth · Presentation · Navigation · DesignSystem · Analytics · FeatureFlags. **PalDebugKit (Phase 9) is the only unbuilt product** (empty stub). Tests: smoke + MemoryCache + TokenProvider + interceptor-chain + Router + Loader. Full phase status: DECISIONS.md §22.

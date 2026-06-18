@@ -7,10 +7,20 @@ private struct TextStyleModifier: ViewModifier {
     @Environment(\.theme) private var theme
 
     func body(content: Content) -> some View {
+        applyColor(
+            to: content
+                .font(token.font(theme))
+                .tracking(token.tracking ?? 0)
+                .lineSpacing(token.lineSpacing ?? 0)
+        )
+    }
+
+    @ViewBuilder
+    private func applyColor(to view: some View) -> some View {
         if let color = token.color {
-            content.font(token.font(theme)).foregroundStyle(color(theme))
+            view.foregroundStyle(color(theme))
         } else {
-            content.font(token.font(theme))
+            view
         }
     }
 }
