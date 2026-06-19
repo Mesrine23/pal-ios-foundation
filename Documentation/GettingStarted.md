@@ -13,14 +13,14 @@ In Xcode: **File ▸ Add Package Dependencies…**, enter the repository URL, an
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/<owner>/pal-ios-foundation.git", from: "0.10.0"),
+    .package(url: "https://github.com/Mesrine23/pal-mvvm-foundation.git", from: "0.12.0"),
 ],
 targets: [
     .target(name: "App", dependencies: [
-        .product(name: "PalCore", package: "pal-ios-foundation"),
-        .product(name: "PalNetworking", package: "pal-ios-foundation"),
-        .product(name: "PalPresentation", package: "pal-ios-foundation"),
-        .product(name: "PalNavigation", package: "pal-ios-foundation"),
+        .product(name: "PalCore", package: "pal-mvvm-foundation"),
+        .product(name: "PalNetworking", package: "pal-mvvm-foundation"),
+        .product(name: "PalPresentation", package: "pal-mvvm-foundation"),
+        .product(name: "PalNavigation", package: "pal-mvvm-foundation"),
         // …add only the products you need
     ]),
 ]
