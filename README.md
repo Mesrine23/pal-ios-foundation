@@ -17,22 +17,19 @@ A reusable, **zero-dependency** iOS foundation — one Swift Package, multiple f
 | `PalDesignSystem` | Opt-in theming, text styles, state views, alerts (en + el) | [→](Documentation/Products/PalDesignSystem.md) |
 | `PalAnalytics` | Provider-agnostic analytics seam + no-op/console/composite | [→](Documentation/Products/PalAnalytics.md) |
 | `PalFeatureFlags` | Synchronous feature-flag seam + in-memory/no-op | [→](Documentation/Products/PalFeatureFlags.md) |
-| `PalDebugKit` | Shake-to-debug: network logs, environment switcher, mocks *(landing next)* | [→](Documentation/Products/PalDebugKit.md) |
+| `PalDebugKit` | Shake-to-debug: network logs, environment switcher, mocks | [→](Documentation/Products/PalDebugKit.md) |
 
 ## Install
 
-In Xcode: **File ▸ Add Package Dependencies…**, paste the repo URL, pin a version, and import the products you need. Full walkthrough — install → composition root → first feature — in **[Getting Started](Documentation/GettingStarted.md)**.
+In Xcode: **File ▸ Add Package Dependencies…**, paste the repo URL, pin a version, and import the products you need. The full walkthrough — install → composition root → first feature — is in **[Getting Started](Documentation/GettingStarted.md)**.
 
 ## Documentation
-
-The docs serve both the engineers adopting Pal and the agents working in it. Pal is built to be scalable and maintainable, so its design is **open to discussion** — the decisions below are proposals to improve on, not dogma.
 
 - **[Getting Started](Documentation/GettingStarted.md)** — from zero to a running feature.
 - **[Architecture](Documentation/ARCHITECTURE.md)** — layers, the dependency DAG, patterns, adoption notes.
 - **[Per-product guides](Documentation/Products/)** — the API and usage of each product.
 - **[Design decisions](Documentation/DECISIONS.md)** — why Pal is shaped the way it is.
-- **[Contributing](CONTRIBUTING.md)** — build/verify, implementation status, the binding rules, deviations log.
-- Agent working guides: [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md).
+- **[Contributing](CONTRIBUTING.md)** — build/verify, the binding conventions, and the deviations log.
 
 ## Develop
 
@@ -40,8 +37,4 @@ The docs serve both the engineers adopting Pal and the agents working in it. Pal
 swift build && swift test
 ```
 
-The `Example/` app is a runnable showcase — it consumes the package via a local path and dogfoods every shipped product: a canonical Users slice (list → detail over a public API) plus a Settings screen (theming, feature flag, demo Keychain session, app info). **Status:** 9 of 10 products are shipped; `PalDebugKit` is the next product — see [CONTRIBUTING](CONTRIBUTING.md) for the phase log.
-
-## License
-
-Released under the [MIT License](LICENSE) — © 2026 Panagiotis Palamidas.
+The `Example/` app is a runnable showcase: it consumes the package via a local path and dogfoods the products — a canonical Users slice (list → detail over a public API) plus a Settings screen (theming, a feature flag, a demo Keychain session, app info).
