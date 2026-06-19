@@ -169,9 +169,37 @@ RouterView(router: router) { route in
 - **Theming** — works with `Theme.system` out of the box; brand with `.theme(myTheme)`. See [PalDesignSystem](Products/PalDesignSystem.md).
 - **Debug tools** — `PalDebugKit` (network logs, env switcher, mocks) is the one product still landing. See [PalDebugKit](Products/PalDebugKit.md).
 
-## Editing Pal while building your app
+## Updating the foundation while building your app
 
-Pin to the Git URL by default. To change Pal mid-app-work: clone it locally, drag the folder into your app's workspace (the local copy overrides the remote pin), edit live, then commit/push/tag Pal, remove the override, and bump your pin.
+You'll inevitably hit a gap in the foundation while building a real app. Here's how to change it correctly.
+
+**The one rule:** a version-pinned dependency is checked out **read-only** into DerivedData (`…/SourcePackages/checkouts/`). Never edit there — those changes are untracked and get wiped on the next resolve. Updating the foundation always means editing the **real repo**; the only question is how the app sees your edits.
+
+### Option A — Local override (edit live) — for tight iteration
+
+1. Clone the foundation locally.
+2. In the app's Xcode window, drag the foundation folder into the Project Navigator (or *File ▸ Add Package Dependencies… ▸ Add Local…*). The local copy **overrides the remote pin** — the app now builds against your source.
+3. Edit the foundation **in the same workspace**, live — no commit or version bump needed to test. Run its `swift test` as you go.
+4. When happy: **commit + push + tag** the foundation (new SemVer), **remove the override**, and **bump the app's pin** to the new tag.
+
+### Option B — Versioned release, then bump the pin — for a discrete change
+
+Make the change in the foundation repo on its own → `swift test` → **commit + push + tag** (e.g. `v0.13.0`) → in the app, *File ▸ Packages ▸ Update to Latest Package Versions* (or raise the version requirement) → commit the app's updated `Package.resolved`.
+
+### Option C — Track a branch/commit — for an early-stage app
+
+Pin the dependency to a **branch** (e.g. `main`) or a specific commit instead of a version, push to the foundation, and *Update Packages*. No tag per tweak. Switch back to version pins once things stabilize.
+
+### The loop, in one line
+
+App pins a **version** → hit a gap → add the **local override** and edit live → verify in the app + `swift test` → **commit/push/tag** the foundation → **remove the override** → **bump the pin** → commit `Package.resolved`.
+
+### Gotchas
+
+- **Remove the local override before you ship or push the app** — otherwise it builds against a local path that doesn't exist on CI or another machine.
+- **Commit `Package.resolved`** so app builds are reproducible.
+- **SemVer is the contract:** pre-1.0 a breaking change bumps *minor* (`0.12 → 0.13`); after 1.0, breaking = *major*.
+- **One direction only:** changes flow *into* the foundation repo and *out* to apps via versions — never edit two divergent copies.
 
 ## Where to go next
 
