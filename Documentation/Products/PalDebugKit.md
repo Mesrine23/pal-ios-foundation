@@ -1,47 +1,71 @@
 # PalDebugKit
 
-> A shake-to-debug suite — network logs, environment switching, and response mocking — in an overlay above any app state. Dependencies: PalCore, PalNetworking, PalPersistence (not PalDesignSystem; the debug UI is self-contained).
-
-> **Status: planned (the one product still landing).** Design is locked; implementation is the next build phase. This guide documents the intended v1 so you can plan adoption. Other products are shipped today. See [CONTRIBUTING](../../CONTRIBUTING.md) for status.
+> A shake-to-debug suite — network logs, environment switching, and response mocking — in an overlay above any app state. Dependencies: PalCore, PalNetworking, PalPersistence (not PalDesignSystem; the debug UI is self-contained). The one Pal product that touches UIKit (contained + gated `#if canImport(UIKit)`), since shake detection and above-everything overlay aren't expressible in pure SwiftUI.
 
 `import PalDebugKit`
 
-## What it will give you (v1)
+## What it gives you
 
-- **Logs** — a live network inspector: method, URL, status, real timing, redacted headers, body preview. Backed by a `DebugInspectorInterceptor` (outermost) + an observable, capped ring-buffer store.
-- **API switcher** — change the active environment at runtime; the next request resolves the new base URL with no rebuild. App-defined `APIEnvironment` payloads; custom/localhost entries.
-- **Mocks** — stub any captured call: toggle it, body auto-seeded from the captured response, editable status + optional latency. A `MockInterceptor` short-circuits the chain; mocked exchanges still appear in Logs.
+- **Logs** — a live, searchable network inspector: method, URL, status, real timing, redacted headers, body preview. A `DebugInspectorInterceptor` (outermost) feeds an observable, capped ring-buffer store (session-only, never persisted).
+- **API switcher** — change the active environment at runtime; the next request resolves the new base URL with no client rebuild. App-defined `APIEnvironment`s, plus user-added custom entries.
+- **Mocks** — stub any captured call: tap it (body auto-seeded from the response), edit status/latency/body, toggle it. A `MockInterceptor` short-circuits the chain; mocked exchanges still appear in Logs.
 
-## How it plugs in
+## Wiring (composition root)
 
-The inspector and mock seams are ordinary interceptors in the existing onion (see [PalNetworking](PalNetworking.md)), ordered **inspector → mock → Logging → Retry → Auth → transport** — so mocked calls are logged for free and the inspector captures request start + timing.
+Everything is gated behind **your app's** `DEBUGKIT` compilation flag so release builds carry no wiring.
 
 ```swift
-// Composition root — gated by YOUR app's DEBUGKIT compilation flag:
 #if DEBUGKIT
-PalDebugTools.shared.enable(/* environments, log cap, … */)
-let interceptors = [
+PalDebugTools.shared.enable(environments: [
+    APIEnvironment(name: "Production", baseURL: prodURL),
+    APIEnvironment(name: "Staging", baseURL: stagingURL),
+])
+let interceptors: [any Interceptor] = [
     PalDebugTools.shared.inspectorInterceptor,   // outermost
     PalDebugTools.shared.mockInterceptor,
     LoggingInterceptor(), RetryInterceptor(), AuthInterceptor(tokenProvider: tokenProvider),
 ]
+let client = HTTPClient(
+    baseURLProvider: { EnvironmentResolver.baseURL(for: .default, default: prodURL) },
+    interceptors: interceptors
+)
 #else
-let interceptors = [LoggingInterceptor(), RetryInterceptor(), AuthInterceptor(tokenProvider: tokenProvider)]
+let client = HTTPClient(baseURL: prodURL, interceptors: [LoggingInterceptor(), RetryInterceptor()])
 #endif
 ```
 
-Environment switching reads the current base URL per request via `HTTPClient`'s `baseURLProvider`; switching broadcasts one event so the app can reset (clear tokens, `cache.clear()`, navigation).
+Order is **inspector → mock → Logging → Retry → Auth → transport**, so mocked calls are logged for free and the inspector captures request start + real timing.
+
+## Presenting + reacting to switches
+
+```swift
+// On your root view — shake opens the overlay menu:
+rootView
+    #if DEBUGKIT
+    .onShake { PalDebugTools.shared.present() }
+    .task {
+        for await change in PalDebugTools.shared.environmentChanges {
+            // your reset: cancel in-flight work, clear tokens + cache, reset navigation
+        }
+    }
+    #endif
+```
+
+The base URL resolves per request through `EnvironmentResolver` (synchronous, off the main actor); selecting a new environment persists it and broadcasts `environmentChanges`. **In-flight cancellation is app-owned** — your reset on the event tears down the work; the client stays immutable.
 
 ## Gating (default-OFF, triple fenced)
 
-1. **Runtime flag** — `PalDebugTools` is OFF until `enable(…)`; the shake is inert otherwise.
-2. **App compilation flag `DEBUGKIT`** — wrap `enable(…)` + interceptor wiring in `#if DEBUGKIT`, defined only in the app configurations that should carry tools (e.g. Debug + a Beta config). App Store config never defines it.
-3. **Data fence** — the app passes a per-configuration environment list, so release has nothing to switch to.
+1. **Runtime flag** — `PalDebugTools` is OFF until `enable(…)`; `present()` is inert otherwise.
+2. **App compilation flag `DEBUGKIT`** — wrap the wiring in `#if DEBUGKIT`, defined only in the app configurations that should carry tools (e.g. Debug + a Beta config). App Store config never defines it.
+3. **Data fence** — you pass a per-configuration environment list, so release has nothing to switch to.
 
 Full opt-out is absolute: an app that never links PalDebugKit has zero footprint.
 
-## Not in v1 (planned later)
+## Notes
 
-Flags viewer/overrides, Saved Logs export, language override, version spoofing. Tabs register via a `DebugModule` seam, so these are additive.
+- **Custom tabs:** `present { /* your SwiftUI tabs */ }` appends app modules via a `@ViewBuilder` slot (no type-erased registry, no `AnyView`).
+- **Logs are session-only** (in-memory ring buffer); **mocks, custom environments, and the selected environment persist** via typed `DefaultsKey`.
+- The debug menu UI is developer-facing and intentionally **not localized** (unlike PalDesignSystem/PalPresentation).
+- **Not in v1** (additive later): Flags viewer/overrides, Saved Logs export, language override, version spoofing.
 
-See also: [Architecture](../ARCHITECTURE.md) · [PalNetworking](PalNetworking.md) · [CONTRIBUTING](../../CONTRIBUTING.md)
+See also: [Architecture](../ARCHITECTURE.md) · [PalNetworking](PalNetworking.md) · [Getting Started](../GettingStarted.md)

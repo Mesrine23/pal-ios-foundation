@@ -8,31 +8,56 @@ import Foundation
 /// decoding (file/PDF endpoints), and ``EmptyResponse`` accepts empty bodies.
 public final class HTTPClient: NetworkClient {
 
-    private let baseURL: URL
+    private let baseURLProvider: @Sendable () -> URL
     private let session: URLSession
     private let interceptors: [any Interceptor]
     private let makeDecoder: @Sendable () -> JSONDecoder
     private let makeEncoder: @Sendable () -> JSONEncoder
 
-    /// Creates a client.
+    /// Creates a client whose base URL is resolved per request.
+    /// - Parameters:
+    ///   - baseURLProvider: Returns the base URL request paths are appended to,
+    ///     evaluated on every request — so runtime environment switching takes
+    ///     effect without rebuilding the client.
+    ///   - session: The underlying session. Defaults to `.shared`.
+    ///   - interceptors: The middleware chain, outermost first. Defaults to none.
+    ///   - makeDecoder: Produces the decoder for response bodies. Defaults to a plain `JSONDecoder`.
+    ///   - makeEncoder: Produces the encoder for ``HTTPBody/json(_:)`` bodies. Defaults to a plain `JSONEncoder`.
+    public init(
+        baseURLProvider: @escaping @Sendable () -> URL,
+        session: URLSession = .shared,
+        interceptors: [any Interceptor] = [],
+        makeDecoder: @escaping @Sendable () -> JSONDecoder = JSONDecoder.init,
+        makeEncoder: @escaping @Sendable () -> JSONEncoder = JSONEncoder.init
+    ) {
+        self.baseURLProvider = baseURLProvider
+        self.session = session
+        self.interceptors = interceptors
+        self.makeDecoder = makeDecoder
+        self.makeEncoder = makeEncoder
+    }
+
+    /// Creates a client with a fixed base URL.
     /// - Parameters:
     ///   - baseURL: The base URL request paths are appended to.
     ///   - session: The underlying session. Defaults to `.shared`.
     ///   - interceptors: The middleware chain, outermost first. Defaults to none.
     ///   - makeDecoder: Produces the decoder for response bodies. Defaults to a plain `JSONDecoder`.
     ///   - makeEncoder: Produces the encoder for ``HTTPBody/json(_:)`` bodies. Defaults to a plain `JSONEncoder`.
-    public init(
+    public convenience init(
         baseURL: URL,
         session: URLSession = .shared,
         interceptors: [any Interceptor] = [],
         makeDecoder: @escaping @Sendable () -> JSONDecoder = JSONDecoder.init,
         makeEncoder: @escaping @Sendable () -> JSONEncoder = JSONEncoder.init
     ) {
-        self.baseURL = baseURL
-        self.session = session
-        self.interceptors = interceptors
-        self.makeDecoder = makeDecoder
-        self.makeEncoder = makeEncoder
+        self.init(
+            baseURLProvider: { baseURL },
+            session: session,
+            interceptors: interceptors,
+            makeDecoder: makeDecoder,
+            makeEncoder: makeEncoder
+        )
     }
 
     public func send<Response>(_ request: Request<Response>) async throws(NetworkError) -> Response {
@@ -83,7 +108,7 @@ public final class HTTPClient: NetworkClient {
     }
 
     private func makeURL(path: String, query: [URLQueryItem]) -> URL? {
-        let url = baseURL.appending(path: path)
+        let url = baseURLProvider().appending(path: path)
         guard !query.isEmpty else { return url }
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
         components.queryItems = (components.queryItems ?? []) + query

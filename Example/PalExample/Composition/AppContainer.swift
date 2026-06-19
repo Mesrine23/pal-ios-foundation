@@ -3,6 +3,7 @@ import PalPersistence
 import PalAuth
 import PalAnalytics
 import PalFeatureFlags
+import PalDebugKit
 
 /// The app's composition root — manual constructor injection, no DI framework.
 /// One factory method per feature; dependencies are built once and shared.
@@ -28,10 +29,27 @@ final class AppContainer {
         analytics = ConsoleAnalyticsTracker()
         flags = InMemoryFeatureFlagsProvider(values: [FeatureFlag.showsUserEmail.key: true])
 
+        #if DEBUGKIT
+        PalDebugTools.shared.enable(environments: [
+            APIEnvironment(name: "Production", baseURL: AppConfig.baseURL),
+            APIEnvironment(name: "Localhost", baseURL: AppConfig.localhostURL),
+        ])
+        let interceptors: [any Interceptor] = [
+            PalDebugTools.shared.inspectorInterceptor,
+            PalDebugTools.shared.mockInterceptor,
+            LoggingInterceptor(),
+            RetryInterceptor(),
+        ]
+        let client = HTTPClient(
+            baseURLProvider: { EnvironmentResolver.baseURL(for: .default, default: AppConfig.baseURL) },
+            interceptors: interceptors
+        )
+        #else
         let client = HTTPClient(
             baseURL: AppConfig.baseURL,
             interceptors: [LoggingInterceptor(), RetryInterceptor()]
         )
+        #endif
         usersRepo = UsersRepository(client: client, cache: cache)
     }
 

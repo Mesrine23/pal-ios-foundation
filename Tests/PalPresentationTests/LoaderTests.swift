@@ -63,4 +63,27 @@ struct LoaderTests {
         try await Task.sleep(for: .milliseconds(50))
         #expect(viewModel.items.state.value == [1, 2, 3])
     }
+
+    @Test("Refresh reloads in place without entering .loading")
+    func refreshDoesNotEnterLoading() async throws {
+        let loader = Loader<String>()
+        await loader.performLoad { "first" }
+        #expect(loader.state.value == "first")
+
+        let task = Task { await loader.refresh { try? await Task.sleep(for: .milliseconds(80)); return "second" } }
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(loader.state.isLoading == false)
+        #expect(loader.state.value == "first")
+        await task.value
+        #expect(loader.state.value == "second")
+    }
+
+    @Test("Refresh keeps the previous value on failure")
+    func refreshKeepsPreviousOnFailure() async throws {
+        let loader = Loader<String>()
+        await loader.performLoad { "first" }
+        await loader.refresh { throw SampleError() }
+        #expect(loader.state.error != nil)
+        #expect(loader.state.value == "first")
+    }
 }

@@ -16,6 +16,7 @@
 		D7770A000000000000000061 /* PalDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = D7770A000000000000000060 /* PalDesignSystem */; };
 		D7770A000000000000000071 /* PalAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D7770A000000000000000070 /* PalAnalytics */; };
 		D7770A000000000000000081 /* PalFeatureFlags in Frameworks */ = {isa = PBXBuildFile; productRef = D7770A000000000000000080 /* PalFeatureFlags */; };
+		D7770A000000000000000091 /* PalDebugKit in Frameworks */ = {isa = PBXBuildFile; productRef = D7770A000000000000000090 /* PalDebugKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 				D7770A000000000000000061 /* PalDesignSystem in Frameworks */,
 				D7770A000000000000000071 /* PalAnalytics in Frameworks */,
 				D7770A000000000000000081 /* PalFeatureFlags in Frameworks */,
+				D7770A000000000000000091 /* PalDebugKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -95,6 +97,7 @@
 				D7770A000000000000000060 /* PalDesignSystem */,
 				D7770A000000000000000070 /* PalAnalytics */,
 				D7770A000000000000000080 /* PalFeatureFlags */,
+				D7770A000000000000000090 /* PalDebugKit */,
 			);
 			productName = PalExample;
 			productReference = D763A29E2FCB38A0005CF20F /* PalExample.app */;
@@ -217,7 +220,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG DEBUGKIT $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -286,7 +289,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7F6HPZ8MBY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -318,7 +321,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7F6HPZ8MBY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -409,6 +412,10 @@
 		D7770A000000000000000080 /* PalFeatureFlags */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PalFeatureFlags;
+		};
+		D7770A000000000000000090 /* PalDebugKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PalDebugKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

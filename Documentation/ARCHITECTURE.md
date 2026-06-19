@@ -128,6 +128,8 @@ final class AppContainer {
 
 **Deep links** — `DeepLinkHandler` maps URL → routes + strategy; `.append` protects in-progress user state, `.replace` resets. The push-launch flow is just "set the path".
 
+**Pull-to-refresh** — drive it from `Loader.refresh(_:)` (reloads in place — no `.loading` transition, since the refresh control is the indicator), not `performLoad`. And keep the scrollable (`List`) mounted: render empty/error as **overlays** rather than `switch`-ing the `List` out for an `EmptyStateView`/`ErrorView`. Flipping `.loading` or swapping the scrollable while `.refreshable` is still spinning fights the refresh control ("change the refresh control while it is not idle") and drops the first update. The initial-load `LoadingView` swap is fine (no refresh control yet).
+
 **Caching** — repository-level cache-aside via `MemoryCache` (`forceRefresh:` bypass, per-key TTL, passive expiry, `clear()` on logout). Never HTTP-level.
 
 **Auth refresh** — `AuthInterceptor` injects the Bearer token and, on 401, awaits `TokenProvider.refresh()` (single-flight actor: N concurrent 401s → one refresh) and retries once. `AuthEvent.loggedOut` streams to the root coordinator → present login flow.

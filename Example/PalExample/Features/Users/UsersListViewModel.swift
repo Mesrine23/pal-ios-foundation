@@ -32,9 +32,10 @@ final class UsersListViewModel {
         }
     }
 
-    /// Pull-to-refresh — awaitable so the control's spinner waits for completion.
+    /// Pull-to-refresh — reloads in place (no `.loading`; the refresh control is
+    /// the indicator), awaitable so the control's spinner waits for completion.
     func refresh() async {
-        await users.performLoad { [fetchUsers] in
+        await users.refresh { [fetchUsers] in
             try await fetchUsers.execute(forceRefresh: true)
         }
     }

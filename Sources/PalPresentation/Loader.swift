@@ -66,6 +66,25 @@ public final class Loader<Value: Sendable> {
         }
     }
 
+    /// Reloads in place for **pull-to-refresh**: it does *not* enter `.loading`
+    /// (the refresh control is already the indicator) — it keeps the current value
+    /// visible and swaps to `.loaded`/`.failed` on completion. Awaitable, so
+    /// `.refreshable` waits for it. Driving `.loading` from a `.refreshable` action
+    /// instead fights the refresh control ("change the refresh control while it is
+    /// not idle") and can drop the first update.
+    public func refresh(_ operation: @escaping @Sendable () async throws -> Value) async {
+        task?.cancel()
+        do {
+            let value = try await operation()
+            guard !Task.isCancelled else { return }
+            state = .loaded(value)
+        } catch is CancellationError {
+        } catch {
+            guard !Task.isCancelled else { return }
+            state = .failed(PresentableError(from: error), previous: state.value)
+        }
+    }
+
     /// Cancels any in-flight load without changing state.
     public func cancel() {
         task?.cancel()

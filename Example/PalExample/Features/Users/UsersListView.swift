@@ -24,14 +24,6 @@ struct UsersListView: View {
             LoadingView(message: String(localized: "Loading users…"))
         case .loading(previous: let cached?):
             list(cached)
-        case .loaded(let users) where users.isEmpty:
-            EmptyStateView(
-                systemImage: "person.slash",
-                title: String(localized: "No users"),
-                message: String(localized: "There is nothing to show yet."),
-                actionTitle: String(localized: "Reload"),
-                action: { viewModel.reload() }
-            )
         case .loaded(let users):
             list(users)
         case .failed(let error, previous: nil):
@@ -52,6 +44,20 @@ struct UsersListView: View {
                 }
             }
             .buttonStyle(.plain)
+        }
+        // The empty state is an overlay, not a replacement: swapping the List out
+        // while pull-to-refresh is still spinning drops the update (and warns). Keeping
+        // the List mounted lets a refreshed-to-empty result render on the first pull.
+        .overlay {
+            if users.isEmpty {
+                EmptyStateView(
+                    systemImage: "person.slash",
+                    title: String(localized: "No users"),
+                    message: String(localized: "There is nothing to show yet."),
+                    actionTitle: String(localized: "Reload"),
+                    action: { viewModel.reload() }
+                )
+            }
         }
         .refreshable { await viewModel.refresh() }
     }

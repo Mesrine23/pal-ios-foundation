@@ -62,4 +62,4 @@ Every screen: `@MainActor @Observable` ViewModel holding one or more `Loader<Val
 - [DECISIONS](Documentation/DECISIONS.md) — the design and its rationale (a living document, open to discussion).
 - [CONTRIBUTING](CONTRIBUTING.md) — build/verify, **implementation status & phase log**, and the deviations log.
 
-**Status lives in CONTRIBUTING** (single source — do not restate it here, so it can't go stale). At a glance: 9 of 10 products shipped; PalDebugKit is the next phase. **When you change an API, a decision, or a product's behavior, update the affected docs in the same change.**
+**Status lives in CONTRIBUTING** (single source — do not restate it here, so it can't go stale). At a glance: all 10 products are built. **When you change an API, a decision, or a product's behavior, update the affected docs in the same change.**

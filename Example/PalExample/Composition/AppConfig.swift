@@ -10,4 +10,13 @@ enum AppConfig {
         }
         return url
     }()
+
+    /// A second environment for the DebugKit API switcher demo (won't resolve —
+    /// switching to it shows the error state, proving the switch took effect).
+    static let localhostURL: URL = {
+        guard let url = URL(string: "http://localhost:3000") else {
+            preconditionFailure("Invalid base URL literal")
+        }
+        return url
+    }()
 }

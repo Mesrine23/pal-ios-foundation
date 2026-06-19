@@ -46,7 +46,7 @@ case .failed(let error, previous: let value?): content(value)   // + banner over
 - **Swallows `CancellationError`** (cancellation never reaches the user).
 - Holds `self` weakly; `state` is `private(set)` (only the loader mutates it).
 
-Variants: `performLoad { } async` for `.task { }` (view-lifecycle cancellation) and `cancel()` for manual control. Rule of thumb: **the runner owns re-trigger cancellation; `.task` owns lifecycle cancellation.**
+Variants: `performLoad { } async` for `.task { }` (view-lifecycle cancellation); `refresh { } async` for `.refreshable { }` (reloads **in place** — no `.loading` transition, since the refresh control is already the spinner); and `cancel()` for manual control. Rule of thumb: **the runner owns re-trigger cancellation; `.task` owns lifecycle cancellation.**
 
 ## Mapping your errors
 
