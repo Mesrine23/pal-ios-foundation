@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Pal",
+    name: "pal-mvvm-foundation",
     defaultLocalization: "en",
     platforms: [
         .iOS(.v17),

@@ -38,3 +38,5 @@ swift build && swift test
 ```
 
 The `Example/` app is a runnable showcase: it consumes the package via a local path and dogfoods the products — a canonical Users slice (list → detail over a public API) plus a Settings screen (theming, a feature flag, a demo Keychain session, app info).
+
+Xcode file templates for scaffolding use cases and view models live in [`Templates/Xcode/`](Templates/Xcode/) — see its README to install them.

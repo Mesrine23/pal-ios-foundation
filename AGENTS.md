@@ -43,11 +43,12 @@ Every target declares ALL modules it directly imports (no transitive reliance). 
 5. **No `print()`** — `LoggerFactory` only (opt-in). **Never log secrets:** auth headers always redacted; bodies at `.debug` only; `privacy: .private` for dynamic values.
 6. **No `AnyView`** or type-erasure workarounds.
 7. No magic numbers in UI — theme tokens for spacing/radii where DesignSystem is used.
-8. One type per file, file named after the type; extensions as `Type+Feature.swift`.
+8. **One primary type per file**, named after it — a protocol may be co-located with its single conforming implementation (e.g. `FetchUsersUseCaseProtocol` + `FetchUsersUseCase` in `FetchUsersUseCase.swift`). Extensions as `Type+Feature.swift`.
 9. Explicit access control; smallest public surface.
 10. Layer rules: Views never touch clients/repos; ViewModels import Domain only; DTO↔entity mapping lives in Data; dependency arrows point inward.
 11. Swift 6 hygiene: no `@unchecked Sendable` without written justification; `@MainActor` ViewModels; actors for shared mutable state.
 12. Errors are never silently swallowed; mapped at boundaries (`NetworkError` → domain error → `PresentableError`); cancellation never surfaces to users.
+13. **Reference types are `final` by default** — every class is `final` unless explicitly designed for subclassing (enables static dispatch, signals intent). Structs, enums, and actors need no annotation.
 
 ## The canonical per-screen pattern
 

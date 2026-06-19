@@ -56,7 +56,7 @@ Rules:
   - Navigation delegates: `‹Screen›NavigationDelegate` with intent-named methods (`showUserDetail(_:)`).
 - **Foundation public API uses standard Swift naming** per Swift API Design Guidelines: `NetworkClient`, `TokenStore`, `Interceptor`, `Routable`, `KeychainService`…
   **GUARD: do NOT rename foundation protocols to add `…Protocol` suffixes** (e.g. `TokenStore` must never become `TokenStoreProtocol`). The suffix convention is app-layer only.
-- One type per file; the file is named after the type. Extensions: `Type+Feature.swift`.
+- One primary type per file, named after the type — a protocol may share a file with its single conforming implementation. Extensions: `Type+Feature.swift`.
 - Storage/cache APIs share uniform verbs: `get` / `set` / `delete`.
 
 ## 5. Clean-code rules (binding for ALL agents and humans)
@@ -68,11 +68,12 @@ Rules:
 5. **No `print()`** — `LoggerFactory` only (opt-in). **Never log secrets:** Authorization/auth headers always redacted; request/response bodies at `.debug` level only; `privacy: .private` interpolation for dynamic values.
 6. **No `AnyView`** or type-erasure workarounds.
 7. No magic numbers in UI — theme tokens for spacing/radii where DesignSystem is used.
-8. One type per file, file named after the type; extensions as `Type+Feature.swift`.
+8. **One primary type per file**, named after it — a protocol may be co-located with its single conforming implementation (e.g. `FetchUsersUseCaseProtocol` + `FetchUsersUseCase` in `FetchUsersUseCase.swift`). Extensions as `Type+Feature.swift`.
 9. Explicit access control; smallest public surface.
 10. Layer rules: Views never touch clients/repos; ViewModels import Domain only; DTO↔entity mapping lives in Data; dependency arrows point inward.
 11. Swift 6 hygiene: no `@unchecked Sendable` without written justification; `@MainActor` ViewModels; actors for shared mutable state.
 12. Errors are never silently swallowed; mapped at boundaries (`NetworkError` → domain error → `PresentableError`); cancellation never surfaces to users.
+13. **Reference types are `final` by default** — every class is `final` unless explicitly designed for subclassing (enables static dispatch, signals intent). Structs, enums, and actors need no annotation.
 
 ## 6. Architecture
 
