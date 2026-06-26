@@ -148,6 +148,43 @@ struct UsersListView: View {
 
 That's the whole loop: **View → ViewModel → UseCase → Repository → NetworkClient**, dependencies pointing inward to Domain.
 
+### Multiple calls, one state
+
+When a screen fires several calls and you only care once they're **all done**, don't track several loaders — return a **composite** from a composing use case and hold a single `Loader<Composite>`:
+
+```swift
+struct DashboardContent: Sendable { let profile: Profile; let feed: [Post]; let balance: Balance }
+
+struct LoadDashboardUseCase: LoadDashboardUseCaseProtocol {
+    let profileRepo: any ProfileRepoProtocol
+    let feedRepo: any FeedRepoProtocol
+    let balanceRepo: any BalanceRepoProtocol
+
+    func execute() async throws -> DashboardContent {
+        async let profile = profileRepo.getProfile()   // independent → run in parallel
+        async let feed    = feedRepo.getFeed()
+        async let balance = balanceRepo.getBalance()
+        return try await DashboardContent(profile: profile, feed: feed, balance: balance)
+    }
+}
+```
+```swift
+@MainActor @Observable
+final class DashboardViewModel {
+    let dashboard = Loader<DashboardContent>()
+    private let load: any LoadDashboardUseCaseProtocol
+    init(load: any LoadDashboardUseCaseProtocol) { self.load = load }
+    func refresh() { dashboard.load { try await self.load.execute() } }
+}
+// View switches on one `viewModel.dashboard.state` — the same single switch as a one-call screen.
+```
+
+`async let` runs the calls concurrently; `try await DashboardContent(…)` returns only when **all** finish, and if any throws, structured concurrency cancels the rest and the one loader goes `.failed`.
+
+- **One loader + composite** when you care "all done together" (independent calls → `async let`; data-dependent → sequential `await`, inside the use case — the VM and View don't change).
+- **A loader per section** only when sections load/fail/**refresh independently**. The moment a section reloads on its own, give *that* section its own `Loader` and drop it from the composite (one source of truth); derive "all done on init" as a computed `isInitiallyLoading`, and refresh just that section with `section.refresh { … }` (its `.loading(previous:)` keeps the stale data while it reloads).
+- A spinner for a true **action** (submit/toggle), not a content section, belongs on a separate `Loader<Void>`/flag with errors via `.appAlert` — the ACTION channel, distinct from LOAD.
+
 ## 5. Navigation
 
 Define a typed route, render with `RouterView`, and let the ViewModel delegate intents (see [PalNavigation](Products/PalNavigation.md)):
