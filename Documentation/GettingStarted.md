@@ -13,7 +13,8 @@ In Xcode: **File ▸ Add Package Dependencies…**, enter the repository URL, an
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Mesrine23/pal-mvvm-foundation.git", from: "0.12.0"),
+    // Pre-1.0, pin to the minor: a 0.x minor bump may break. Track tags, never a branch.
+    .package(url: "https://github.com/Mesrine23/pal-mvvm-foundation.git", .upToNextMinor(from: "0.13.0")),
 ],
 targets: [
     .target(name: "App", dependencies: [
@@ -116,7 +117,8 @@ final class UsersListViewModel {
     init(fetchUsers: FetchUsersUseCaseProtocol, delegate: UsersListNavigationDelegate?) {
         self.fetchUsers = fetchUsers; self.delegate = delegate
     }
-    func refresh() { users.load { try await self.fetchUsers.execute() } }
+    func load() async { await users.performLoad { try await self.fetchUsers.execute() } }
+    func refresh() { users.load { try await self.fetchUsers.execute() } }   // retry button
     func userTapped(_ user: User) { delegate?.showUserDetail(user) }
 }
 ```
@@ -138,7 +140,7 @@ struct UsersListView: View {
             case .failed(_, previous: let users?):  list(users)   // + banner over stale data
             }
         }
-        .task { await viewModel.users.performLoad { try await viewModel.refresh() } }
+        .task { await viewModel.load() }
     }
     func list(_ users: [User]) -> some View {
         List(users) { user in Button(user.name) { viewModel.userTapped(user) } }
@@ -192,10 +194,13 @@ Define a typed route, render with `RouterView`, and let the ViewModel delegate i
 ```swift
 import PalNavigation
 
-enum UsersRoute: Routable { case detail(User) }
+enum UsersRoute: Routable { case list; case detail(User) }
 
-RouterView(router: router) { route in
-    switch route { case .detail(let user): UserDetailView(/* … */) }
+RouterView(router: router, root: .list) { route in   // `root` is a Route case — the stack's base screen
+    switch route {
+    case .list:             UsersListView(/* … */)
+    case .detail(let user): UserDetailView(/* … */)
+    }
 }
 ```
 
@@ -235,7 +240,7 @@ App pins a **version** → hit a gap → add the **local override** and edit liv
 
 - **Remove the local override before you ship or push the app** — otherwise it builds against a local path that doesn't exist on CI or another machine.
 - **Commit `Package.resolved`** so app builds are reproducible.
-- **SemVer is the contract:** pre-1.0 a breaking change bumps *minor* (`0.12 → 0.13`); after 1.0, breaking = *major*.
+- **SemVer is the contract:** pre-1.0 a breaking change bumps *minor* (`0.12 → 0.13`), so **pin `.upToNextMinor(from:)`** to opt into each minor deliberately; after 1.0, breaking = *major* and `from:` is safe. **Track tags, never a branch** (a branch pin chases a moving commit with no contract).
 - **One direction only:** changes flow *into* the foundation repo and *out* to apps via versions — never edit two divergent copies.
 
 ## Where to go next

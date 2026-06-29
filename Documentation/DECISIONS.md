@@ -86,6 +86,8 @@ Rules:
   - **Composition root** (app shell): wires client → repo → use case → ViewModel.
 - **Multi-call screens:** a composing use case returns a composite content model; parallel via `async let`, sequential `await` where data-dependent; structured concurrency auto-cancels siblings on failure. ViewModel stays a one-line `loader.load {}`.
 - **Partial-failure screens:** composite model fields typed `Result<Value, PresentableError>`; the use case wraps optional topics; View renders per-topic content or an inline `SectionErrorView`. Critical call still throws → whole screen fails. Default retry re-runs the whole composition.
+- **Delegation (child → owner):** when a child must report back to the owner that presents it (navigation, flow completion), use a `‹Context›Delegate` — `@MainActor`, `AnyObject`, held **weak**, intent-named methods. It is the default over passing closures or `Binding`s upward. A **closure** suffices for a single one-shot callback; an **`AsyncStream`** carries broadcast events (e.g. `AuthEvent`), not a delegate. Navigation seams keep the `‹Screen›NavigationDelegate` name (§4).
+- **Local mutation (re-fetch after write):** a local store has no `@Query`; after a write through the repository, re-fetch to reflect the change (coordinator → list VM `refresh()`). Keeps one source of truth and the read path unchanged.
 
 ## 7. DI & composition (app-side pattern — NOT in the foundation)
 
@@ -179,19 +181,21 @@ Rules:
 - **Images:** default = native `AsyncImage` + documented `URLCache` sizing. Image-heavy apps adopt Nuke/Kingfisher **app-side**. No `PalImage` component in v1.
 - **Pagination:** known pattern-to-design before/with app #1 (no v1 machinery).
 - **Route payloads:** entities (not IDs) — restoration-unfriendly, accepted deliberately.
-- **Delegate growth:** watch during dogfooding; revisit if per-screen delegates bloat.
+- **Delegate growth:** watch during dogfooding; revisit if per-screen delegates bloat. (The delegation *pattern* is blessed — see §6.)
 - **`StateView`:** deliberately not shipped; explicit switch preferred by owner.
 
 ## 19. Workflows
 
 - **Live-edit while building an app:** app depends on Pal via Git URL pinned; to edit, drag the local Pal folder into the app's workspace (local override wins) → edit live → commit, push, tag → remove override → bump pin.
 - **`DEBUGKIT` recipe (per app):** add `DEBUGKIT` to `SWIFT_ACTIVE_COMPILATION_CONDITIONS` of each configuration that should carry tools; wrap `PalDebugTools.enable(…)` + Inspector/Mock interceptor wiring in `#if DEBUGKIT` at the composition root.
-- **Release:** semver tags; breaking changes only with major bumps after 1.0 (deprecation policy to be defined pre-1.0).
+- **Release:** SemVer **tags** on `main`; consumers pin to tags (never a branch).
+- **Source control (GitFlow):** `main` = live/consumer branch (tagged releases only) · `develop` = integration · `feature/{name}` off develop → back to develop · `hotfix/{name}` off main → merged to **both** main + develop (tag a patch). Contributors/agents push the `feature/*` branch and **request review before merging** (active from the Notifications feature onward).
+- **Compatibility & evolution (open to extension, closed to modification):** the public API is a contract for the apps on Pal — evolve **additively** (new types, parameters with defaults, protocol requirements **only with default impls**), **deprecate don't delete** (`@available(*, deprecated, renamed:)`, remove only at a major), and treat a new public enum `case` as breaking. SemVer mapping: additive → minor · fix → patch · breaking → major (with deprecations first). Pre-1.0 a minor may break, so apps pin `.upToNextMinor`. There is no consumer-tracked `release/*` branch (tags are the channel); a `release/*` branch, if ever used, is a short-lived hardening branch, and a `1.x` maintenance line exists only to backport across a major. **At 1.0.0, add `swift package diagnose-api-breaking-changes` as a required CI gate** against the previous release tag.
 
 ## 20. Checklists
 
 **Pre-app#1:** pagination pattern design · image strategy confirmation per app.
-**Pre-1.0:** public API & versioning/deprecation policy · DocC catalog consideration · broad test coverage + `PalTestSupport`. *(LICENSE chosen: MIT.)*
+**Pre-1.0:** versioning/deprecation policy **defined** (§19 Compatibility & evolution) · public API freeze review + `diagnose-api-breaking-changes` CI gate at 1.0 · DocC catalog consideration · broad test coverage + `PalTestSupport`. *(LICENSE chosen: MIT.)*
 
 ## 21. Implementation status & deviations log
 

@@ -22,6 +22,30 @@ The naming conventions and the 12 clean-code rules in [DECISIONS.md §4–5](Doc
 
 [DECISIONS.md](Documentation/DECISIONS.md) records the intended design. Pal is built to be scalable and maintainable, so it is **open to discussion** — propose changes rather than drifting silently. When implementation reality conflicts with the design, **stop, surface the conflict, and record the resolution in the deviations log below.** The design text stays authoritative; this log is the audit trail of approved exceptions.
 
+## Source control (GitFlow)
+
+- **`main`** — the live branch consumers track. Only **tagged releases** land here; never commit features directly to it.
+- **`develop`** — the integration branch where finished features accumulate between releases.
+- **`feature/{name}`** — branch off `develop`; merge back into `develop` when done.
+- **`hotfix/{name}`** — branch off `main` for an urgent fix; merge into **both** `main` (tag a patch, e.g. `v1.0.1`) **and** `develop` (so the next release doesn't revert it).
+- A release is `develop → main` plus a SemVer **tag**. **Consumers pin to tags, never to a branch.**
+- **Merge discipline:** push the `feature/*` (or `hotfix/*`) branch and **request review before merging** — don't self-merge into `develop`/`main` without a cross-check. *(Active from the Notifications feature onward.)*
+
+## Compatibility & evolution
+
+Pal is consumed by multiple apps, so the public API is a **contract** — *open to extension, closed to modification.*
+
+- **Evolve additively.** New types, new parameters with default values, and new protocol requirements **only with default implementations** (a bare new requirement breaks every conformer in every app).
+- **Deprecate, don't delete.** Keep the old symbol and forward it; remove only at a major bump, a release after the deprecation:
+  ```swift
+  @available(*, deprecated, renamed: "send(_:)")
+  public func execute<R>(_ request: Request<R>) async throws(NetworkError) -> R { try await send(request) }
+  ```
+- **Mind enums.** Adding a `case` to a public enum is source-breaking (consumer `switch`es are exhaustive) — reserve case additions for a major.
+- **SemVer mapping:** additive → minor · fix → patch · breaking → major (with deprecations first). Pre-1.0 a minor *may* break, so consumers pin **`.upToNextMinor(from:)`** and we still prefer additive changes.
+- **Consumers track tags, never branches.** No `release/x.y.z` branch is meant to be followed; a `release/*` branch (if ever used) is a short-lived hardening branch deleted after tagging, and a long-lived `1.x` maintenance line exists only to backport fixes across a major.
+- **At `1.0.0`:** add `swift package diagnose-api-breaking-changes <previous-tag>` as a **required CI gate** (it builds the baseline + current public API and fails on a break). Deferred until 1.0 on purpose — pre-1.0 breaks are legal, so the check would mostly be noise now.
+
 ## Implementation status
 
 Each phase ends GREEN: `swift build` + `swift test` pass and the Example app compiles.
@@ -60,3 +84,4 @@ The audit trail of approved exceptions where implementation reality met the desi
 - **Phase 9 — PalDebugKit is the one UIKit-using package.** Shake detection and above-everything overlay aren't expressible in pure SwiftUI, so DebugKit contains UIKit behind `#if canImport(UIKit)` (`UIViewControllerRepresentable` for `.onShake`, `UIWindow` for the overlay) — the only Pal package importing UIKit; the macOS host build excludes it. `HTTPClient.baseURLProvider` was reintroduced for per-request env switching. Env routing splits into a nonisolated `EnvironmentResolver` (synchronous reads backing the `@Sendable` `baseURLProvider`) + a `@MainActor` `EnvironmentStore` (UI + persistence). `MockRecord` stores latency in milliseconds (`Duration` isn't `Codable`). The debug menu is **deliberately not localized** (developer-facing, not user-facing) — an exception to the en+el rule. DebugModule registration is realized as built-in tabs + a `@ViewBuilder` slot (no type-erased registry, honoring no-`AnyView`).
 - **Phase 9 polish (pre-publish, `v0.13.0`).** Pull-to-refresh: added `Loader.refresh(_:)` (in-place reload — no `.loading`, since the refresh control is the indicator) plus the keep-the-scrollable-mounted pattern (empty/error as overlays), after the Example surfaced a "change the refresh control while it is not idle" conflict on a refresh-to-empty. DebugKit UI refined per owner review — Logs: always-visible search, request body + query params in detail, larger body cap; Mocks: a searchable list of every executed call (reusing the Logs row) with a focused 3-control editor (mocked / status / body), mocked-first ordering, and global-off un-mocks everything.
 - **Phase 10 built ahead of Phase 9 (owner preference).** A runnable Example showcase (Users canonical slice + Settings) dogfooding the 9 shipped products via manual DI against a public API; PalDebugKit is excluded until Phase 9. Each Pal product was linked into the app target in `project.pbxproj` (sources auto-include via Xcode's synchronized file groups). Because the app target sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, the Domain/Data value types are marked `nonisolated` so DTOs decode and entities construct off the main actor — exactly the adoption guidance in [ARCHITECTURE.md](Documentation/ARCHITECTURE.md).
+- **Docs pass — MyRecipes adoption feedback (no source change).** A second test app (local-only SwiftData CRUD, Swinject DI) built fully on Pal **section by section with zero foundation changes** — strong evidence the API is followable from docs alone, and a live proof of the additive-evolution policy (every finding was a docs gap, not a wrong mechanism). Actions: (1) fixed two non-compiling shipped snippets — GettingStarted's `.task { performLoad { refresh() } }` (the closure must return `Value`, not `Void`) and PalNavigation/GettingStarted's `RouterView` (omitted the required `root:` route case); (2) **extended the compile-tested-snippet discipline** to the `RouterView` usage (`PalNavigationTests`) and the `performLoad`-based VM `load()` (`PalPresentationTests`) so consumer-doc snippets can't silently drift from the API; (3) added adoption guidance with **no code/deps in Pal** — SwiftData-behind-repositories (`@ModelActor` + domain-struct mapping + re-fetch-after-write), app-layer modularization as local SPM packages, and a `nonisolated`-tokens note for `MainActor`-default isolation; (4) recorded the **source-control (GitFlow)** + **compatibility/evolution** policy (above). The coverage caveat stands: a local-only app leaves PalNetworking/PalAuth/most of DebugKit/MemoryCache unexercised — a networked second test app would validate the other half (the Example app already covers the networked path).

@@ -54,6 +54,12 @@ Every target declares ALL modules it directly imports (no transitive reliance). 
 
 Every screen: `@MainActor @Observable` ViewModel holding one or more `Loader<Value>` (each drives a `ViewState`: `idle / loading(previous:) / loaded / failed(error, previous:)`); call `loader.load { }` (auto-cancels the previous in-flight load, swallows cancellation, maps to `PresentableError`); the View switches on `viewModel.‹loader›.state`. Navigation goes through the screen's `NavigationDelegate`, implemented by the feature coordinator as one-liners over the typed `Router`. Dependencies arrive via `init` (constructor injection from the app-side factory). Load failures → `ViewState`; action failures → `.appAlert`.
 
+## Patterns & evolution (binding)
+
+- **Delegation (child → owner):** when a child reports back to its owner (navigation, flow completion), use a `‹Context›Delegate` — `@MainActor`, `AnyObject`, held **weak**, intent-named. A closure for a one-shot callback; an `AsyncStream` for broadcast events (`AuthEvent`). See [DECISIONS §6](Documentation/DECISIONS.md).
+- **Compatibility — open to extension, closed to modification:** the public API is a contract for the apps on Pal. Additive only; new protocol requirements ship with default impls; **deprecate (`@available`), never delete** pre-major; consumers track SemVer **tags**, never branches.
+- **Source control:** GitFlow (`main` live/tagged · `develop` integration · `feature/*` off develop · `hotfix/*` off main → both). **Push the task branch and ask before merging.** Full policy in [CONTRIBUTING](CONTRIBUTING.md).
+
 ## Documentation map
 
 - [Getting Started](Documentation/GettingStarted.md) — install → composition root → first feature.
