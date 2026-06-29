@@ -1,6 +1,9 @@
 import Foundation
 import Testing
 @testable import PalNavigation
+#if canImport(SwiftUI)
+import SwiftUI
+#endif
 
 enum TestRoute: Routable {
     case list
@@ -132,4 +135,18 @@ struct RouterTests {
 
         #expect(router.path == [.settings, .detail(3)])
     }
+
+    #if canImport(SwiftUI)
+    @Test("RouterView doc snippet compiles — requires the root: route")
+    func routerViewDocSnippetCompiles() {
+        let router = Router<TestRoute>()
+        _ = RouterView(router: router, root: .list) { route in
+            switch route {
+            case .list:           Text("list")
+            case .detail(let id): Text("detail \(id)")
+            case .settings:       Text("settings")
+            }
+        }
+    }
+    #endif
 }

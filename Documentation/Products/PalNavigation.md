@@ -17,6 +17,7 @@
 import PalNavigation
 
 enum UsersRoute: Routable {
+    case list                // the stack's base screen — passed to RouterView as `root`
     case detail(User)        // payload rides the route — no "courier" registration
     case settings
 }
@@ -44,8 +45,9 @@ router.dismissSelf()               // a child dismisses itself via its parent li
 ## Render with RouterView
 
 ```swift
-RouterView(router: router) { route in
-    switch route {                 // exhaustive — compiler-enforced completeness
+RouterView(router: router, root: .list) { route in    // `root` is a Route case (the stack's base screen)
+    switch route {                 // exhaustive — compiler-enforced; renders the root route too
+    case .list:             UsersListView(viewModel: factory.list())
     case .detail(let user): UserDetailView(viewModel: factory.detail(user))
     case .settings:         SettingsView()
     }
